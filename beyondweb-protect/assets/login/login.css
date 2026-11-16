@@ -1,0 +1,613 @@
+/*!
+ * Beyondweb Protect, Modul Login – Stylesheet fuer wp-login.php
+ * Deckt ab: Anmeldung, 2FA per E-Mail-Code, Backup-Code (ASE Pro 2FA)
+ * Logo und Kopf-Variante kommen als CSS-Variablen und Body-Klassen aus dem Plugin.
+ * Masse sind Variablen, damit die Seite auf niedrigen Bildschirmen ohne Scrollen passt.
+ */
+
+@font-face {
+  font-family: "BW Nunito Sans";
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url("nunito-sans-latin-wght.woff2") format("woff2");
+}
+
+/* ---------- Seite ---------- */
+body.login:not(.interim-login) {
+  background: #F3F2EC !important;
+  --bw-logo-w: 72px;
+  --bw-logo-h: 72px;
+  --bw-k: 1;
+  --bw-top: 40px;
+  --bw-logo-gap: 28px;
+  --bw-bottom: 40px;
+  --bw-pad: 44px;
+  --bw-title: 34px;
+  --bw-text: 16px;
+  --bw-field: 52px;
+  --bw-btn: 52px;
+  --bw-gap: 26px;
+  --bw-gap-s: 18px;
+  --bw-micro: 0px;
+  min-height: 100vh;
+  margin: 0;
+  padding: calc(var(--bw-top) + var(--bw-logo-h) * var(--bw-k) + var(--bw-logo-gap)) 16px var(--bw-bottom);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "BW Nunito Sans", "Avenir Next", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #454B47;
+}
+body.login.bw-2fa-email:not(.interim-login),
+body.login:not(.interim-login):has(form[name="validate_2fa_form"]) { --bw-micro: 28px; }
+body.login:not(.interim-login) .language-switcher { display: none !important; }
+
+/* ---------- Karte ---------- */
+.login:not(.interim-login) #login {
+  position: relative;
+  box-sizing: border-box;
+  width: 480px;
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  padding: var(--bw-pad);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: #FFFFFF;
+  border: 1px solid #E2E0D7;
+  border-radius: 20px;
+  box-shadow: none;
+  color: #454B47;
+}
+
+/* ---------- Kopf ueber der Karte: Logo, Site-Name oder nichts ---------- */
+.login:not(.interim-login) #login h1.wp-login-logo,
+.login:not(.interim-login) #login > h1 {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  margin: 0 0 var(--bw-logo-gap);
+  padding: 0;
+}
+.login:not(.interim-login) #login h1 a {
+  margin: 0 auto;
+  width: calc(var(--bw-logo-w) * var(--bw-k));
+  height: calc(var(--bw-logo-h) * var(--bw-k));
+  max-width: 260px;
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+.login.bw-logo:not(.interim-login) #login h1 a {
+  background-image: var(--bw-logo-img);
+  filter: var(--bw-logo-filter, none);
+}
+/* Site-Name als Text statt Logo */
+body.login.bw-name:not(.interim-login) { --bw-logo-h: 24px; --bw-k: 1; --bw-logo-gap: 20px; }
+.login.bw-name:not(.interim-login) #login h1 a {
+  width: auto;
+  height: 24px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-indent: 0;
+  background: none;
+  text-align: center;
+  text-decoration: none;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #161A18;
+}
+/* Ohne Kopf */
+body.login.bw-nologo:not(.interim-login) { --bw-logo-h: 0px; --bw-logo-gap: 0px; }
+.login.bw-nologo:not(.interim-login) #login h1 { display: none; }
+
+/* ---------- Formular ---------- */
+.login:not(.interim-login) #login form {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  font-family: inherit;
+}
+.login:not(.interim-login) #login form p { margin: 0; }
+.login:not(.interim-login) #login form > p:empty { display: none; }
+
+/* Titel */
+.login:not(.interim-login) #login form#loginform::before {
+  display: block;
+  width: fit-content;
+  margin: 0 0 calc(var(--bw-gap) * .5);
+  padding: 0 2px 0 0;
+  font-size: var(--bw-title);
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: #161A18;
+  background-image: linear-gradient(transparent 68%, #E0E05C 68%, #E0E05C 90%, transparent 90%);
+  background-repeat: no-repeat;
+  background-position: right top;
+}
+.login:not(.interim-login) #login form#loginform[name="loginform"]::before {
+  content: "Willkommen zurück";
+  background-size: 34% 100%;
+}
+.login:not(.interim-login) #login form#loginform[name="validate_2fa_form"]::before {
+  content: "Code eingeben";
+  background-size: 63% 100%;
+}
+.login:not(.interim-login) #login form#loginform[name="validate_2fa_form"]:has(input[name="two-factor-backup-code"])::before {
+  content: "Backup-Code eingeben";
+  background-size: 41% 100%;
+}
+
+/* Einleitung Anmeldung (Text je nach Site-Einstellung, Klassen kommen aus dem Plugin) */
+.login:not(.interim-login) #login form#loginform[name="loginform"] > p:first-of-type::before {
+  content: "Melde dich mit deinen Zugangsdaten an.";
+  display: block;
+  margin: 0 0 var(--bw-gap);
+  font-size: var(--bw-text);
+  line-height: 1.5;
+  font-weight: 400;
+  color: #454B47;
+}
+.login.bw-email-only #login form#loginform[name="loginform"] > p:first-of-type::before { content: "Melde dich mit deiner E-Mail-Adresse an."; }
+.login.bw-2fa-email #login form#loginform[name="loginform"] > p:first-of-type::before { content: "Melde dich an. Danach schicken wir dir einen Code per Mail."; }
+.login.bw-email-only.bw-2fa-email #login form#loginform[name="loginform"] > p:first-of-type::before { content: "Melde dich mit deiner E-Mail-Adresse an. Danach schicken wir dir einen Code per Mail."; }
+
+/* Labels */
+.login:not(.interim-login) #login form label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #161A18;
+}
+
+/* Felder */
+.login:not(.interim-login) #login form input[type="text"],
+.login:not(.interim-login) #login form input[type="email"],
+.login:not(.interim-login) #login form input[type="password"] {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--bw-field);
+  min-height: var(--bw-field);
+  margin: 0;
+  padding: 0 16px;
+  border: 1px solid #D2D0C6;
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: none;
+  color: #161A18;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.2;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.login:not(.interim-login) #login form input[type="text"]:focus,
+.login:not(.interim-login) #login form input[type="email"]:focus,
+.login:not(.interim-login) #login form input[type="password"]:focus {
+  border-color: #161A18;
+  box-shadow: 0 0 0 4px rgba(224, 224, 92, .45);
+}
+.login:not(.interim-login) #login form > p:first-of-type { margin-bottom: var(--bw-gap-s); }
+.login:not(.interim-login) #login form .user-pass-wrap { margin: 0 0 var(--bw-gap-s); }
+.login:not(.interim-login) #login form .wp-pwd { position: relative; margin: 0; }
+.login:not(.interim-login) #login form .wp-pwd input[type="password"],
+.login:not(.interim-login) #login form .wp-pwd input[type="text"] { padding-right: 52px; }
+
+/* Passwort anzeigen */
+.login:not(.interim-login) #login .wp-pwd .button.wp-hide-pw {
+  position: absolute;
+  top: calc((var(--bw-field) - 40px) / 2);
+  right: 6px;
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #6C726D;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login:not(.interim-login) #login .wp-pwd .button.wp-hide-pw:focus {
+  box-shadow: 0 0 0 2px #161A18;
+  border-radius: 10px;
+}
+.login:not(.interim-login) #login .wp-pwd .button.wp-hide-pw .dashicons {
+  top: 0;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+
+/* Angemeldet bleiben */
+.login:not(.interim-login) #login form .forgetmenot {
+  float: none;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  min-height: 0;
+  padding: 0;
+  margin: 0 0 var(--bw-gap);
+}
+.login:not(.interim-login) #login form .forgetmenot label {
+  display: inline;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #454B47;
+  cursor: pointer;
+}
+.login:not(.interim-login) #login form .forgetmenot input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0 10px 0 0;
+  border: 1px solid #D2D0C6;
+  border-radius: 4px;
+  box-shadow: none;
+  accent-color: #161A18;
+}
+.login:not(.interim-login) #login form .forgetmenot input[type="checkbox"]:checked {
+  background: #161A18;
+  border-color: #161A18;
+}
+.login:not(.interim-login) #login form .forgetmenot input[type="checkbox"]:checked::before {
+  filter: brightness(0) invert(1);
+  margin: -3px 0 0 -4px;
+}
+.login:not(.interim-login) #login form .forgetmenot .wp-tooltip { display: none; }
+
+/* Hauptbutton */
+.login:not(.interim-login) #login form p.submit {
+  display: flex;
+  flex-direction: column;
+  float: none;
+}
+.login:not(.interim-login) #login form .button-primary,
+.login:not(.interim-login) #login form .asenha-2fa-verify-btn,
+.login:not(.interim-login) #login form .asenha-2fa-recovery-verify-btn,
+.wp-core-ui .login:not(.interim-login) #login #wp-submit.button-primary,
+.login.wp-core-ui:not(.interim-login) #login #wp-submit.button-primary {
+  float: none;
+  width: 100%;
+  height: var(--bw-btn);
+  min-height: var(--bw-btn);
+  margin: 0;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 999px;
+  background: #E0E05C;
+  box-shadow: none;
+  text-shadow: none;
+  color: #191E1C;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: var(--bw-btn);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color .15s ease;
+}
+.login:not(.interim-login) #login form .button-primary:hover,
+.login:not(.interim-login) #login form .asenha-2fa-verify-btn:hover,
+.login:not(.interim-login) #login form .asenha-2fa-recovery-verify-btn:hover,
+.login.wp-core-ui:not(.interim-login) #login #wp-submit.button-primary:hover {
+  background: #D2D24A;
+  color: #191E1C;
+  border: 0;
+}
+.login:not(.interim-login) #login form .button-primary:focus-visible,
+.login:not(.interim-login) #login form .asenha-2fa-action-btn:focus-visible {
+  outline: 2px solid #161A18;
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+/* Microcopy unter dem Button */
+.login.bw-2fa-email:not(.interim-login) #login form#loginform[name="loginform"] p.submit::after,
+.login:not(.interim-login) #login form .two-factor-email-resend::before,
+.login:not(.interim-login) #login form:has(input[name="two-factor-backup-code"]) p.submit::after {
+  content: "Geschützt mit Zwei-Faktor-Anmeldung";
+  display: flex;
+  align-self: center;
+  align-items: center;
+  height: 16px;
+  margin: 12px auto 0;
+  padding-left: 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236C726D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='10' width='16' height='11' rx='2'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") left center / 14px 14px no-repeat;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: #6C726D;
+}
+
+/* ---------- Links ---------- */
+.login:not(.interim-login) #login a {
+  color: #161A18;
+  text-decoration: underline;
+  text-decoration-color: #E0E05C;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+  box-shadow: none;
+  outline: none;
+}
+.login:not(.interim-login) #login a:hover {
+  color: #000000;
+  text-decoration: underline;
+  text-decoration-color: #C9C93E;
+}
+.login:not(.interim-login) #login a:focus-visible {
+  outline: 2px solid #161A18;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* «Passwort vergessen?» auf die Zeile von «Angemeldet bleiben» (Button + 2FA-Hinweis + Abstand + Zeile 24) */
+.login:not(.interim-login) #login #nav {
+  position: relative;
+  top: calc(-1 * (var(--bw-btn) + var(--bw-micro) + var(--bw-gap) + 24px));
+  height: 24px;
+  margin: 0 0 -24px;
+  padding: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 14px;
+  line-height: 24px;
+  pointer-events: none;
+}
+.login:not(.interim-login) #login #nav a {
+  font-weight: 600;
+  pointer-events: auto;
+}
+/* Auf anderen Seiten (Passwort vergessen usw.) normal unter dem Formular */
+body.login:not(.login-action-login) #login #nav,
+body.login #login:not(:has(form#loginform[name="loginform"])) #nav {
+  position: static;
+  height: auto;
+  margin: 24px 0 0;
+  justify-content: center;
+}
+
+/* Zurueck zur Website */
+.login:not(.interim-login) #login #backtoblog {
+  margin: var(--bw-gap) 0 0;
+  padding: 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.login:not(.interim-login) #login #backtoblog a {
+  color: #454B47;
+  font-weight: 400;
+}
+
+/* Datenschutz-Link, falls vorhanden */
+.login:not(.interim-login) #login .privacy-policy-page-link {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 13px;
+}
+
+/* ---------- Meldungen ---------- */
+.login:not(.interim-login) #login #login_error,
+.login:not(.interim-login) #login .message,
+.login:not(.interim-login) #login .notice,
+.login:not(.interim-login) #login .success {
+  margin: 0 0 var(--bw-gap);
+  padding: 12px 16px;
+  border: 0;
+  border-left: 4px solid #E0E05C;
+  border-radius: 8px;
+  background: #F7F6F1;
+  box-shadow: none;
+  color: #161A18;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.login:not(.interim-login) #login #login_error { border-left-color: #C0392B; }
+
+/* ---------- 2FA: Code per E-Mail ---------- */
+.login:not(.interim-login) #login form p.two-factor-prompt {
+  margin: 0 0 var(--bw-gap);
+  font-size: var(--bw-text);
+  line-height: 1.5;
+  color: #454B47;
+}
+.login:not(.interim-login) #login form p.two-factor-prompt + p { margin: 0 0 var(--bw-gap); }
+.login:not(.interim-login) #login form input.authcode,
+.login:not(.interim-login) #login form input#authcode {
+  height: calc(var(--bw-field) + 12px);
+  min-height: calc(var(--bw-field) + 12px);
+  padding: 0 20px;
+  border-color: #161A18;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: .4em;
+}
+.login:not(.interim-login) #login form input#authcode::placeholder { color: #8A908B; opacity: .6; }
+
+.login:not(.interim-login) #login form .two-factor-prompt-email-ctas {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.login:not(.interim-login) #login form .asenha-2fa-btn-text { line-height: 1.2; }
+.login:not(.interim-login) #login form .asenha-2fa-btn-checkmark { margin-left: 6px; }
+
+.login:not(.interim-login) #login form .two-factor-email-resend {
+  margin-left: 0 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0;
+}
+.login:not(.interim-login) #login form .two-factor-email-resend::before { align-self: center; }
+.login:not(.interim-login) #login form .asenha-2fa-resend-btn {
+  height: 24px;
+  min-height: 0;
+  margin: var(--bw-gap) 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #161A18;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  text-decoration: underline;
+  text-decoration-color: #E0E05C;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+  cursor: pointer;
+  display: inline-block !important;
+}
+.login:not(.interim-login) #login form .asenha-2fa-resend-btn:hover { background: transparent; color: #000; }
+.login:not(.interim-login) #login form .asenha-2fa-resend-btn .asenha-2fa-btn-text { line-height: 24px; }
+
+/* Andere Methode («Having problems?») auf die Zeile von «Code erneut senden» */
+body.login:not(.interim-login) #login .backup-methods-wrap {
+  position: relative;
+  top: -24px;
+  height: 24px;
+  margin: 0 0 -24px !important;
+  padding: 0 !important;
+  border-radius: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 14px;
+  line-height: 24px;
+  pointer-events: none;
+}
+body.login:not(.interim-login) #login form:has(input[name="two-factor-backup-code"]) ~ .backup-methods-wrap {
+  position: static;
+  height: auto;
+  margin: var(--bw-gap) 0 0 !important;
+  justify-content: center;
+}
+body.login:not(.interim-login) #login .backup-methods-wrap > p { display: none; }
+body.login:not(.interim-login) #login .backup-methods-wrap ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+body.login:not(.interim-login) #login .backup-methods-wrap li { margin: 0; line-height: 24px; }
+body.login:not(.interim-login) #login .backup-methods-wrap a {
+  color: #454B47;
+  font-size: 14px;
+  line-height: 24px;
+  pointer-events: auto;
+}
+
+/* ---------- Fusszeile ---------- */
+body.login:not(.interim-login)::after {
+  content: "Technische Betreuung durch Beyondweb GmbH";
+  display: block;
+  box-sizing: border-box;
+  margin: 28px auto 0;
+  padding: 0 0 44px 24px;
+  min-height: 60px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236C726D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l8 3v6c0 5-3.5 8.3-8 9-4.5-.7-8-4-8-9V6l8-3z'/%3E%3Cpath d='M9 12l2 2 4-4'/%3E%3C/svg%3E") left 1px / 16px 16px no-repeat,
+    url("swiss-made-software.svg") center bottom / auto 26px no-repeat;
+  font-size: 13px;
+  line-height: 18px;
+  color: #6C726D;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ---------- Niedrige Bildschirme (Laptop): alles ohne Scrollen ---------- */
+@media (min-width: 561px) and (max-height: 880px) {
+  body.login:not(.interim-login) {
+    --bw-k: .78;
+    --bw-top: 24px;
+    --bw-logo-gap: 20px;
+    --bw-bottom: 24px;
+    --bw-pad: 32px 40px;
+    --bw-title: 30px;
+    --bw-text: 15px;
+    --bw-field: 48px;
+    --bw-btn: 48px;
+    --bw-gap: 20px;
+    --bw-gap-s: 14px;
+  }
+  /* Fusszeile bleibt zweizeilig, nur enger */
+  body.login:not(.interim-login)::after {
+    margin-top: 18px;
+    padding-bottom: 32px;
+    min-height: 50px;
+    background-size: 16px 16px, auto 22px;
+  }
+}
+@media (min-width: 561px) and (max-height: 700px) {
+  body.login:not(.interim-login) {
+    --bw-k: .6;
+    --bw-top: 16px;
+    --bw-logo-gap: 16px;
+    --bw-bottom: 16px;
+    --bw-pad: 28px 40px;
+    --bw-title: 28px;
+    --bw-field: 44px;
+    --bw-btn: 46px;
+    --bw-gap: 16px;
+    --bw-gap-s: 12px;
+  }
+  body.login:not(.interim-login)::after { margin-top: 14px; padding-bottom: 30px; min-height: 48px; }
+  .login:not(.interim-login) #login #login_error,
+  .login:not(.interim-login) #login .message,
+  .login:not(.interim-login) #login .notice,
+  .login:not(.interim-login) #login .success { padding: 6px 14px; font-size: 13px; }
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 560px) {
+  body.login:not(.interim-login) {
+    --bw-k: .85;
+    --bw-top: 28px;
+    --bw-logo-gap: 24px;
+    --bw-bottom: 28px;
+    --bw-pad: 28px 22px;
+    --bw-title: 28px;
+    --bw-text: 15px;
+    --bw-gap: 22px;
+    --bw-gap-s: 16px;
+    padding-left: 12px;
+    padding-right: 12px;
+    justify-content: flex-start;
+  }
+  .login:not(.interim-login) #login { border-radius: 16px; }
+}

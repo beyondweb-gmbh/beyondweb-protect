@@ -1,0 +1,42 @@
+# Baut die ZIP aus dem Stand von main, prueft Version und PHP-Syntax und legt
+# das Release v<version> samt SHA-256-Pruefsumme an (der Tag entsteht dabei).
+# Start: Actions > Release > Run workflow, Version eingeben.
+# Bewusst ohne Aktionen von Dritten (nur actions/checkout von GitHub selbst).
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version wie im Plugin-Kopf, z. B. 1.0.3'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nur von main
+        run: test "$GITHUB_REF_NAME" = "main"
+
+      - name: ZIP bauen und pruefen
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Ungueltige Version: $VERSION"; exit 1; }
+          bash bin/build.sh "$VERSION"
+
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh release create "v$VERSION" dist/* \
+            --target "$GITHUB_SHA" \
+            --title "Beyondweb Protect $VERSION" \
+            --notes "Siehe CHANGELOG.md. SHA-256 der ZIP: $(cut -d' ' -f1 dist/*.sha256)"
