@@ -1,7 +1,8 @@
 # Baut die ZIP aus dem Stand von main, prueft Version und PHP-Syntax und legt
 # das Release v<version> samt SHA-256-Pruefsumme an (der Tag entsteht dabei).
 # Start: Actions > Release > Run workflow, Version eingeben.
-# Bewusst ohne Aktionen von Dritten (nur actions/checkout von GitHub selbst).
+# Bewusst ohne Aktionen von Dritten (nur actions/checkout von GitHub selbst),
+# auf einen festen Commit gepinnt: Ein verschobener Tag aendert den Ablauf nicht.
 name: Release
 
 on:
@@ -19,7 +20,7 @@ jobs:
   release:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Nur von main
         run: test "$GITHUB_REF_NAME" = "main"

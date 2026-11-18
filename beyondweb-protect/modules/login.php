@@ -2,13 +2,15 @@
 /**
  * Beyondweb Protect, Modul «Login»
  *
- * Einheitliches Login-Design: Kundenlogo automatisch, deutsche Texte fuer die
- * 2FA-Anmeldung von ASE Pro, Fusszeile «Technische Betreuung durch Beyondweb GmbH».
+ * Einheitliches Login-Design: Kundenlogo automatisch, eigene Texte in Deutsch,
+ * Franzoesisch, Italienisch und Englisch (auch fuer die 2FA-Anmeldung von ASE Pro),
+ * Sprachwahl auf mehrsprachigen Websites, Fusszeile mit Hinweis auf Beyondweb.
  *
  * Optionen (per WP-CLI):
- *   bw_protect_logo        auto | name | none (Kopf ueber der Karte)
- *   bw_protect_logo_id     Attachment-ID, ueberschreibt die automatische Logo-Suche
- *   bw_protect_logo_light  'yes' / 'no' erzwingt das Einfaerben (hell -> dunkel)
+ *   bw_protect_logo           auto | name | none (Kopf ueber der Karte)
+ *   bw_protect_logo_id        Attachment-ID, ueberschreibt die automatische Logo-Suche
+ *   bw_protect_logo_light     'yes' / 'no' erzwingt das Einfaerben (hell -> dunkel)
+ *   bw_protect_lang_switcher  auto | on | off (Sprachwahl auf der Login-Seite)
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -18,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
  * Stylesheet und Logo
  * ---------------------------------------------------------------------- */
 
-add_action( 'login_enqueue_scripts', 'bw_protect_login_enqueue', 20 );
+add_action( 'login_enqueue_scripts', bw_protect_guard( 'bw_protect_login_enqueue' ), 20 );
 
 function bw_protect_login_enqueue() {
 	wp_enqueue_style(
@@ -28,20 +30,48 @@ function bw_protect_login_enqueue() {
 		BW_PROTECT_VERSION
 	);
 
-	$logo = 'auto' === bw_protect_login_logo_mode() ? bw_protect_login_get_logo() : null;
-	if ( ! $logo ) {
-		return;
+	$t = bw_protect_texts();
+
+	if ( bw_protect_login_email_only() && bw_protect_login_email_2fa() ) {
+		$intro = $t['intro_email_2fa'];
+	} elseif ( bw_protect_login_email_only() ) {
+		$intro = $t['intro_email'];
+	} elseif ( bw_protect_login_email_2fa() ) {
+		$intro = $t['intro_2fa'];
+	} else {
+		$intro = $t['intro'];
 	}
 
+	// Texte, die das Stylesheet einsetzt, in der Sprache der Login-Seite.
 	$css  = 'body.login{';
-	$css .= '--bw-logo-img:url("' . esc_url_raw( $logo['url'] ) . '");';
-	$css .= '--bw-logo-w:' . (int) $logo['width'] . 'px;--bw-logo-h:' . (int) $logo['height'] . 'px;';
-	if ( ! empty( $logo['light'] ) ) {
-		$css .= '--bw-logo-filter:brightness(0);';
+	$css .= '--bw-t-title:' . bw_protect_login_css_string( $t['title'] ) . ';--bw-t-title-hl:' . (int) $t['title_hl'] . '%;';
+	$css .= '--bw-t-code:' . bw_protect_login_css_string( $t['code'] ) . ';--bw-t-code-hl:' . (int) $t['code_hl'] . '%;';
+	$css .= '--bw-t-backup:' . bw_protect_login_css_string( $t['backup'] ) . ';--bw-t-backup-hl:' . (int) $t['backup_hl'] . '%;';
+	$css .= '--bw-t-intro:' . bw_protect_login_css_string( $intro ) . ';';
+	$css .= '--bw-t-micro:' . bw_protect_login_css_string( $t['micro'] ) . ';';
+	$css .= '--bw-t-footer:' . bw_protect_login_css_string( $t['footer'] ) . ';';
+
+	$logo = 'auto' === bw_protect_login_logo_mode() ? bw_protect_login_get_logo() : null;
+	if ( $logo ) {
+		$css .= '--bw-logo-img:url("' . esc_url_raw( $logo['url'] ) . '");';
+		$css .= '--bw-logo-w:' . (int) $logo['width'] . 'px;--bw-logo-h:' . (int) $logo['height'] . 'px;';
+		if ( ! empty( $logo['light'] ) ) {
+			$css .= '--bw-logo-filter:brightness(0);';
+		}
 	}
 	$css .= '}';
 
 	wp_add_inline_style( 'beyondweb-protect-login', $css );
+}
+
+/**
+ * Text als CSS-Zeichenkette (fuer content: var(--x)).
+ */
+function bw_protect_login_css_string( $text ) {
+	// «E-Mail» nicht am Bindestrich umbrechen (unsichtbares Verbindungszeichen U+2060).
+	$text = preg_replace( '/(e-)(mail)/i', '$1' . "\u{2060}" . '$2', (string) $text );
+	$text = str_replace( array( '\\', '"', "\r", "\n", '<', '>' ), array( '\\\\', '\\"', ' ', ' ', '', '' ), (string) $text );
+	return '"' . $text . '"';
 }
 
 /**
@@ -56,7 +86,7 @@ function bw_protect_login_logo_mode() {
 
 /**
  * Logo suchen. Reihenfolge:
- * 1. Option bw_protect_login_logo_id (manuell, z. B. per WP-CLI)
+ * 1. Option bw_protect_logo_id (manuell, z. B. per WP-CLI)
  * 2. Theme-Logo (custom_logo)
  * 3. Block-Theme-Logo (site_logo)
  * 4. Impreza, Flatsome
@@ -85,7 +115,7 @@ function bw_protect_login_find_logo() {
 	}
 
 	$flatsome = get_theme_mod( 'site_logo' ); // Flatsome: ID oder URL.
-	if ( $flatsome && ! is_numeric( $flatsome ) && wp_http_validate_url( $flatsome ) ) {
+	if ( $flatsome && is_string( $flatsome ) && ! is_numeric( $flatsome ) && bw_protect_login_is_own_url( $flatsome ) ) {
 		$id = attachment_url_to_postid( $flatsome );
 		$candidates[] = $id ? $id : $flatsome;
 	} elseif ( $flatsome ) {
@@ -137,12 +167,16 @@ function bw_protect_login_find_logo() {
  * URL gehoert zur eigenen Website (gleicher Host wie die Startseite)?
  */
 function bw_protect_login_is_own_url( $url ) {
-	if ( ! wp_http_validate_url( $url ) ) {
+	if ( ! is_string( $url ) || ! preg_match( '#^https?://#i', $url ) ) {
 		return false;
 	}
+	// Zuerst den Host vergleichen: So wird fuer fremde Adressen nie ein Name aufgeloest.
 	$host = wp_parse_url( $url, PHP_URL_HOST );
 	$home = wp_parse_url( home_url(), PHP_URL_HOST );
-	return $host && $home && strtolower( $host ) === strtolower( $home );
+	if ( ! $host || ! $home || strtolower( $host ) !== strtolower( $home ) ) {
+		return false;
+	}
+	return (bool) wp_http_validate_url( $url );
 }
 
 /**
@@ -156,7 +190,7 @@ function bw_protect_login_fit_box( $w, $h ) {
 	}
 	$ratio = $w / $h;
 	$box_h = $max_h;
-	$box_w = (int) round( $max_h * $ratio );
+	$box_w = (int) max( 24, round( $max_h * $ratio ) );
 	if ( $box_w > $max_w ) {
 		$box_w = $max_w;
 		$box_h = (int) max( 32, round( $max_w / $ratio ) );
@@ -214,7 +248,7 @@ function bw_protect_login_analysis_file( $id ) {
 		return '';
 	}
 	if ( 'svg' === strtolower( pathinfo( $file, PATHINFO_EXTENSION ) ) ) {
-		return filesize( $file ) <= MB_IN_BYTES ? $file : '';
+		return filesize( $file ) <= 200 * KB_IN_BYTES ? $file : ''; // Groessere SVG werden nicht untersucht.
 	}
 	if ( bw_protect_login_image_is_small( $file ) ) {
 		return $file;
@@ -270,8 +304,6 @@ function bw_protect_login_raster_is_light( $file ) {
 			$opaque++;
 		}
 	}
-	imagedestroy( $img );
-	imagedestroy( $src );
 
 	$total = $size * $size;
 	if ( 0 === $opaque || $transparent / $total < 0.1 ) {
@@ -285,7 +317,8 @@ function bw_protect_login_svg_is_light( $file ) {
 	if ( ! $svg ) {
 		return false;
 	}
-	preg_match_all( '/(?:fill|stroke|stop-color)\s*[:=]\s*["\']?\s*(#[0-9a-f]{3,6}\b|white|black|rgb\([^)]*\))/i', $svg, $m );
+	// Possessive Quantoren (*+, ?+): kein Zurueckspringen, auch bei praeparierten Dateien schnell.
+	preg_match_all( '/(?:fill|stroke|stop-color)\s*+[:=]\s*+["\']?+\s*+(#[0-9a-f]{3,6}\b|white|black|rgb\([^)]{0,40}\))/i', $svg, $m );
 	if ( empty( $m[1] ) ) {
 		return false;
 	}
@@ -326,10 +359,10 @@ function bw_protect_login_color_luminance( $color ) {
 }
 
 /* -------------------------------------------------------------------------
- * Body-Klassen, damit Einleitung und 2FA-Hinweis zur Site passen
+ * Body-Klassen, damit Kopf, Einleitung und 2FA-Hinweis zur Site passen
  * ---------------------------------------------------------------------- */
 
-add_filter( 'login_body_class', function ( $classes ) {
+add_filter( 'login_body_class', bw_protect_guard( function ( $classes ) {
 	$classes[] = 'bw-protect';
 	$mode      = bw_protect_login_logo_mode();
 	if ( 'name' === $mode ) {
@@ -345,8 +378,11 @@ add_filter( 'login_body_class', function ( $classes ) {
 	if ( bw_protect_login_email_2fa() ) {
 		$classes[] = 'bw-2fa-email';
 	}
+	if ( count( bw_protect_login_languages() ) > 1 ) {
+		$classes[] = 'bw-has-lang';
+	}
 	return $classes;
-} );
+} ) );
 
 /**
  * 2FA per E-Mail-Code in ASE aktiv?
@@ -357,6 +393,16 @@ function bw_protect_login_email_2fa() {
 		&& ! empty( $o['two_factor_authentication'] )
 		&& ! empty( $o['two_factor_available_providers'] )
 		&& in_array( 'email', (array) $o['two_factor_available_providers'], true );
+}
+
+/**
+ * Login nur per E-Mail (ASE «Login ID Type»)?
+ */
+function bw_protect_login_email_only() {
+	$o = get_option( 'admin_site_enhancements', array() );
+	return is_array( $o )
+		&& ! empty( $o['login_id_type_restriction'] )
+		&& isset( $o['login_id_type'] ) && 'email' === $o['login_id_type'];
 }
 
 /* -------------------------------------------------------------------------
@@ -372,13 +418,218 @@ add_filter( 'login_headertext', function () {
 } );
 
 /* -------------------------------------------------------------------------
- * Deutsche Texte auf der Login-Seite (nur wp-login.php)
+ * Sprachwahl (nur auf mehrsprachigen Websites)
+ * ---------------------------------------------------------------------- */
+
+// Das Auswahlfeld von WordPress faellt weg: Es listet Varianten derselben Sprache
+// einzeln auf und verliert beim Wechsel die Adresszusaetze eines eigenen Login-Pfads.
+add_filter( 'login_display_language_dropdown', '__return_false', 99 );
+
+/**
+ * Sprachen fuer die Sprachwahl: Sprachcode => Locale, je Sprache ein Eintrag.
+ *
+ * Schalter bw_protect_lang_switcher:
+ *   auto  Sprache der Website, installierte Sprachpakete und Englisch, wenn die Website
+ *         englisch ist oder ein Mehrsprachigkeits-Plugin Englisch fuehrt. Kommen so
+ *         zwei Sprachen zusammen, erscheint die Sprachwahl, immer mit Englisch.
+ *   on    Sprachwahl immer, auch auf einsprachigen Websites (Sprache der Website und Englisch).
+ *   off   keine Sprachwahl.
+ */
+function bw_protect_login_languages() {
+	static $cached = null;
+	if ( null !== $cached ) {
+		return $cached;
+	}
+	$cached = array();
+
+	$mode = get_option( 'bw_protect_lang_switcher', 'auto' );
+	if ( 'off' === $mode ) {
+		return $cached;
+	}
+
+	$installed = get_available_languages(); // Installierte Sprachpakete.
+	$site      = get_locale();
+	$current   = determine_locale();
+
+	// Reihenfolge = Vorrang innerhalb einer Sprache: gewaehlte Variante, Website, Rest.
+	$locales = array_merge( array( $current, $site ), $installed, bw_protect_login_plugin_locales() );
+	if ( 'on' === $mode ) {
+		$locales[] = 'en_US';
+	}
+	$locales = (array) apply_filters( 'bw_protect_login_locales', $locales );
+
+	$found = array();
+	foreach ( $locales as $locale ) {
+		if ( ! is_string( $locale ) || ! preg_match( '/^[A-Za-z_]{2,20}$/', $locale ) ) {
+			continue;
+		}
+		$code = bw_protect_code( $locale );
+		if ( '' === $code || isset( $found[ $code ] ) ) {
+			continue;
+		}
+		// Nur Sprachen, die WordPress auch anzeigen kann: Englisch oder installiertes Paket.
+		if ( 'en' !== $code && ! in_array( $locale, $installed, true ) ) {
+			continue;
+		}
+		if ( 'en' === $code && ! in_array( $locale, $installed, true ) ) {
+			$locale = 'en_US';
+		}
+		$found[ $code ] = $locale;
+	}
+
+	// Englisch ist immer dabei, sobald es eine Sprachwahl gibt (zwei Sprachen oder mehr).
+	if ( count( $found ) >= 2 && ! isset( $found['en'] ) ) {
+		$found['en'] = 'en_US';
+	}
+
+	// Feste Reihenfolge wie in der Schweiz ueblich, der Rest alphabetisch.
+	$order = array( 'de', 'fr', 'it', 'rm', 'en' );
+	foreach ( $order as $code ) {
+		if ( isset( $found[ $code ] ) ) {
+			$cached[ $code ] = $found[ $code ];
+			unset( $found[ $code ] );
+		}
+	}
+	ksort( $found );
+	$cached = array_merge( $cached, $found );
+
+	if ( count( $cached ) < 2 ) {
+		$cached = array();
+	}
+	return $cached;
+}
+
+/**
+ * Sprachen aus WPML, Polylang und TranslatePress. Gebraucht wird das fuer Englisch:
+ * Dafuer gibt es kein Sprachpaket, an dem man die Sprache erkennen koennte.
+ */
+function bw_protect_login_plugin_locales() {
+	$out = array();
+
+	$wpml = apply_filters( 'wpml_active_languages', null, array( 'skip_missing' => 0 ) );
+	if ( is_array( $wpml ) ) {
+		foreach ( $wpml as $language ) {
+			if ( is_array( $language ) && ! empty( $language['default_locale'] ) ) {
+				$out[] = $language['default_locale'];
+			}
+		}
+	}
+
+	if ( function_exists( 'pll_languages_list' ) ) {
+		$out = array_merge( $out, (array) pll_languages_list( array( 'fields' => 'locale' ) ) );
+	}
+
+	$trp = get_option( 'trp_settings' );
+	if ( is_array( $trp ) && ! empty( $trp['translation-languages'] ) ) {
+		$out = array_merge( $out, (array) $trp['translation-languages'] );
+	}
+
+	return array_filter( $out, 'is_string' );
+}
+
+/**
+ * Name einer Sprache in dieser Sprache (fuer Screenreader und Tooltip).
+ */
+function bw_protect_login_language_name( $code ) {
+	$names = array(
+		'de' => 'Deutsch',
+		'fr' => 'Français',
+		'it' => 'Italiano',
+		'rm' => 'Rumantsch',
+		'en' => 'English',
+		'es' => 'Español',
+		'pt' => 'Português',
+		'nl' => 'Nederlands',
+	);
+	return isset( $names[ $code ] ) ? $names[ $code ] : strtoupper( $code );
+}
+
+add_action( 'login_footer', bw_protect_guard( 'bw_protect_login_language_nav' ) );
+
+/**
+ * Abfrage der aktuellen Adresse ohne Sprachwahl, unveraendert uebernommen.
+ * Sie wird bewusst nicht zerlegt und neu gebaut: So bleiben auch ungewoehnliche
+ * Schluessel (etwa ein Login-Pfad mit Punkt) genau so, wie sie sind.
+ */
+function bw_protect_login_query_without_lang() {
+	$query = isset( $_SERVER['QUERY_STRING'] ) ? (string) wp_unslash( $_SERVER['QUERY_STRING'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- wird mit esc_attr ausgegeben.
+	if ( '' === $query || strlen( $query ) > 2000 ) {
+		return ''; // Ueberlange Abfragen nicht weitertragen.
+	}
+	$query = (string) preg_replace( '/[\x00-\x20\x7f]+/', '', $query ); // Steuerzeichen und Leerraum haben in einer Abfrage nichts zu suchen.
+
+	$keep = array();
+	foreach ( explode( '&', $query ) as $part ) {
+		if ( '' === $part ) {
+			continue;
+		}
+		$pieces = explode( '=', $part, 2 );
+		$key    = rawurldecode( $pieces[0] );
+		if ( 'wp_lang' === $key || 0 === strpos( $key, 'wp_lang[' ) ) {
+			continue;
+		}
+		$keep[] = $part;
+	}
+	return implode( '&', $keep );
+}
+
+/**
+ * Sprachwahl ausgeben: ein Link je Sprache, die aktuelle Sprache hervorgehoben.
+ * Die Links behalten alle Adresszusaetze der aktuellen Seite (eigener Login-Pfad,
+ * Weiterleitungsziel) und wechseln die Sprache ueber den WordPress-Standard wp_lang.
+ * Sie sind relativ («?...») und zeigen deshalb nie auf einen anderen Server.
+ */
+function bw_protect_login_language_nav() {
+	global $interim_login;
+	if ( ! empty( $interim_login ) ) {
+		return; // Anmeldefenster bei abgelaufener Sitzung.
+	}
+
+	$languages = bw_protect_login_languages();
+	if ( count( $languages ) < 2 ) {
+		return;
+	}
+
+	$t       = bw_protect_texts();
+	$current = bw_protect_code( determine_locale() );
+
+	// Die Links bestehen nur aus der Abfrage («?...») und bleiben damit immer auf der aktuellen
+	// Seite. Der Pfad der Anfrage wird bewusst nicht uebernommen: Ein praeparierter Pfad wie
+	// «//fremde-domain/...» wuerde sonst zu einem Link auf einen fremden Server.
+	$base = bw_protect_login_query_without_lang();
+
+	echo '<nav class="bw-lang" aria-label="' . esc_attr( $t['nav'] ) . '"><ul>';
+	foreach ( $languages as $code => $locale ) {
+		$name = bw_protect_login_language_name( $code );
+		if ( $code === $current ) {
+			printf(
+				'<li><span class="bw-lang-item is-current" aria-current="true">%1$s<span class="screen-reader-text" lang="%2$s"> %3$s</span></span></li>',
+				esc_html( strtoupper( $code ) ),
+				esc_attr( $code ),
+				esc_html( $name )
+			);
+		} else {
+			printf(
+				'<li><a class="bw-lang-item" href="%1$s" hreflang="%2$s" title="%3$s">%4$s<span class="screen-reader-text" lang="%2$s"> %5$s</span></a></li>',
+				esc_attr( '?' . $base . ( '' !== $base ? '&' : '' ) . 'wp_lang=' . rawurlencode( $locale ) ),
+				esc_attr( $code ),
+				esc_attr( $name ),
+				esc_html( strtoupper( $code ) ),
+				esc_html( $name )
+			);
+		}
+	}
+	echo '</ul></nav>';
+}
+
+/* -------------------------------------------------------------------------
+ * Eigene Texte auf der Login-Seite (nur wp-login.php)
  * ---------------------------------------------------------------------- */
 
 // Erst auf wp-login.php registrieren: auf allen anderen Seiten laeuft davon nichts.
 add_action( 'login_init', function () {
-	add_filter( 'gettext', 'bw_protect_login_gettext', 20, 3 );
-	add_filter( 'gettext_with_context', 'bw_protect_login_gettext_context', 20, 4 );
+	add_filter( 'gettext', bw_protect_guard( 'bw_protect_login_gettext' ), 20, 3 );
+	add_filter( 'gettext_with_context', bw_protect_guard( 'bw_protect_login_gettext_context' ), 20, 4 );
 } );
 
 function bw_protect_login_on_login_page() {
@@ -391,61 +642,56 @@ function bw_protect_login_gettext( $translation, $text, $domain ) {
 	}
 
 	if ( 'default' === $domain && 'Username or Email Address' === $text && bw_protect_login_email_only() ) {
-		return 'E-Mail-Adresse';
+		$t = bw_protect_texts();
+		return $t['email_label'];
 	}
 
 	if ( 'admin-site-enhancements' !== $domain ) {
 		return $translation;
 	}
 
-	static $map = null;
-	if ( null === $map ) {
-		$map = array(
-		'A verification code has been sent to the email address associated with your account.' => bw_protect_login_email_prompt(),
-		'Verification Code:'                                => 'Code aus der E-Mail',
-		'Verify'                                            => 'Bestätigen',
-		'Resend Code'                                       => 'Code erneut senden',
-		'Having problems?'                                  => 'Probleme?',
-		'Use a recovery code'                               => 'Backup-Code verwenden',
-		'Send a code to your email'                         => 'Code per E-Mail senden',
-		'Enter a recovery code.'                            => 'Gib einen deiner Backup-Codes ein. Jeder Code funktioniert nur einmal.',
-		'Recovery Code:'                                    => 'Backup-Code',
-		'<strong>Error:</strong> Invalid email or incorrect password.' => '<strong>Fehler:</strong> E-Mail-Adresse oder Passwort ist nicht korrekt.',
+	static $maps = array();
+	$lang = bw_protect_lang();
+	if ( ! isset( $maps[ $lang ] ) ) {
+		$t             = bw_protect_texts();
+		$maps[ $lang ] = array(
+			'A verification code has been sent to the email address associated with your account.' => bw_protect_login_email_prompt(),
+			'Verification Code:'        => $t['code_label'],
+			'Verify'                    => $t['verify'],
+			'Resend Code'               => $t['resend'],
+			'Having problems?'          => $t['problems'],
+			'Use a recovery code'       => $t['use_backup'],
+			'Send a code to your email' => $t['send_code'],
+			'Enter a recovery code.'    => $t['backup_prompt'],
+			'Recovery Code:'            => $t['backup_label'],
+			'<strong>Error:</strong> Invalid email or incorrect password.' => $t['error'],
 		);
 	}
 
-	return isset( $map[ $text ] ) ? $map[ $text ] : $translation;
+	return isset( $maps[ $lang ][ $text ] ) ? $maps[ $lang ][ $text ] : $translation;
 }
 
 function bw_protect_login_gettext_context( $translation, $text, $context, $domain ) {
 	if ( bw_protect_login_on_login_page() && 'default' === $domain && 'site' === $context && '&larr; Go to %s' === $text ) {
-		return 'Zurück zur Website';
+		$t = bw_protect_texts();
+		return $t['back'];
 	}
 	return $translation;
-}
-
-/**
- * Login nur per E-Mail (ASE «Login ID Type»)?
- */
-function bw_protect_login_email_only() {
-	$o = get_option( 'admin_site_enhancements', array() );
-	return is_array( $o )
-		&& ! empty( $o['login_id_type_restriction'] )
-		&& isset( $o['login_id_type'] ) && 'email' === $o['login_id_type'];
 }
 
 /**
  * Hinweis zum E-Mail-Code inkl. Gueltigkeit aus den ASE-Einstellungen.
  */
 function bw_protect_login_email_prompt() {
-	$text    = 'Wir haben dir einen Code an deine E-Mail-Adresse geschickt.';
+	$t       = bw_protect_texts();
+	$text    = $t['prompt'];
 	$minutes = 0;
 	$o       = get_option( 'admin_site_enhancements', array() );
 	if ( is_array( $o ) && ! empty( $o['two_factor_email_token_ttl'] ) && is_numeric( $o['two_factor_email_token_ttl'] ) ) {
 		$minutes = (int) round( (int) $o['two_factor_email_token_ttl'] / 60 );
 	}
 	if ( $minutes > 0 ) {
-		$text .= sprintf( ' Dieser ist %d Minuten gültig.', $minutes );
+		$text .= sprintf( $t['prompt_ttl'], $minutes );
 	}
 	return $text;
 }

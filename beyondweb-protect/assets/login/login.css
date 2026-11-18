@@ -1,7 +1,8 @@
 /*!
  * Beyondweb Protect, Modul Login – Stylesheet fuer wp-login.php
- * Deckt ab: Anmeldung, 2FA per E-Mail-Code, Backup-Code (ASE Pro 2FA)
- * Logo und Kopf-Variante kommen als CSS-Variablen und Body-Klassen aus dem Plugin.
+ * Deckt ab: Anmeldung, 2FA per E-Mail-Code, Backup-Code (ASE Pro 2FA), Sprachwahl
+ * Logo, Kopf-Variante und Texte (--bw-t-*, je nach Sprache) kommen als CSS-Variablen
+ * und Body-Klassen aus dem Plugin. Die deutschen Texte hier sind nur der Rueckfall.
  * Masse sind Variablen, damit die Seite auf niedrigen Bildschirmen ohne Scrollen passt.
  */
 
@@ -144,21 +145,21 @@ body.login.bw-nologo:not(.interim-login) { --bw-logo-h: 0px; --bw-logo-gap: 0px;
   background-position: right top;
 }
 .login:not(.interim-login) #login form#loginform[name="loginform"]::before {
-  content: "Willkommen zurück";
-  background-size: 34% 100%;
+  content: var(--bw-t-title, "Willkommen zurück");
+  background-size: var(--bw-t-title-hl, 34%) 100%;
 }
 .login:not(.interim-login) #login form#loginform[name="validate_2fa_form"]::before {
-  content: "Code eingeben";
-  background-size: 63% 100%;
+  content: var(--bw-t-code, "Code eingeben");
+  background-size: var(--bw-t-code-hl, 63%) 100%;
 }
 .login:not(.interim-login) #login form#loginform[name="validate_2fa_form"]:has(input[name="two-factor-backup-code"])::before {
-  content: "Backup-Code eingeben";
-  background-size: 41% 100%;
+  content: var(--bw-t-backup, "Backup-Code eingeben");
+  background-size: var(--bw-t-backup-hl, 41%) 100%;
 }
 
-/* Einleitung Anmeldung (Text je nach Site-Einstellung, Klassen kommen aus dem Plugin) */
+/* Einleitung Anmeldung (Text je nach Site-Einstellung und Sprache aus dem Plugin) */
 .login:not(.interim-login) #login form#loginform[name="loginform"] > p:first-of-type::before {
-  content: "Melde dich mit deinen Zugangsdaten an.";
+  content: var(--bw-t-intro, "Melde dich mit deinen Zugangsdaten an.");
   display: block;
   margin: 0 0 var(--bw-gap);
   font-size: var(--bw-text);
@@ -166,9 +167,6 @@ body.login.bw-nologo:not(.interim-login) { --bw-logo-h: 0px; --bw-logo-gap: 0px;
   font-weight: 400;
   color: #454B47;
 }
-.login.bw-email-only #login form#loginform[name="loginform"] > p:first-of-type::before { content: "Melde dich mit deiner E-Mail-Adresse an."; }
-.login.bw-2fa-email #login form#loginform[name="loginform"] > p:first-of-type::before { content: "Melde dich an. Danach schicken wir dir einen Code per Mail."; }
-.login.bw-email-only.bw-2fa-email #login form#loginform[name="loginform"] > p:first-of-type::before { content: "Melde dich mit deiner E-Mail-Adresse an. Danach schicken wir dir einen Code per Mail."; }
 
 /* Labels */
 .login:not(.interim-login) #login form label {
@@ -331,7 +329,7 @@ body.login.bw-nologo:not(.interim-login) { --bw-logo-h: 0px; --bw-logo-gap: 0px;
 .login.bw-2fa-email:not(.interim-login) #login form#loginform[name="loginform"] p.submit::after,
 .login:not(.interim-login) #login form .two-factor-email-resend::before,
 .login:not(.interim-login) #login form:has(input[name="two-factor-backup-code"]) p.submit::after {
-  content: "Geschützt mit Zwei-Faktor-Anmeldung";
+  content: var(--bw-t-micro, "Geschützt mit Zwei-Faktor-Anmeldung");
   display: flex;
   align-self: center;
   align-items: center;
@@ -532,9 +530,74 @@ body.login:not(.interim-login) #login .backup-methods-wrap a {
   pointer-events: auto;
 }
 
+/* Logo ohne Linkziel (Modul «Path»: schuetzt den Login-Pfad vor der Herkunftsangabe) */
+body.login:not(.interim-login) #login h1 a[href="#"] { cursor: default; }
+
+/* ---------- Sprachwahl (nur mehrsprachige Websites) ---------- */
+/* Breite Fenster: oben rechts, kostet keine Hoehe. Schmale Fenster: unter der Karte. */
+body.login:not(.interim-login) .bw-lang {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  margin: 0;
+  padding: 0;
+}
+body.login:not(.interim-login) .bw-lang ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #FFFFFF;
+  border: 1px solid #E2E0D7;
+  border-radius: 999px;
+}
+body.login:not(.interim-login) .bw-lang li { margin: 0; padding: 0; }
+body.login:not(.interim-login) .bw-lang .bw-lang-item {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: #454B47;
+  text-decoration: none;
+  box-shadow: none;
+  transition: background-color .15s ease, color .15s ease;
+}
+body.login:not(.interim-login) .bw-lang a.bw-lang-item:hover {
+  background: #F3F2EC;
+  color: #161A18;
+}
+body.login:not(.interim-login) .bw-lang a.bw-lang-item:focus-visible {
+  outline: 2px solid #161A18;
+  outline-offset: 2px;
+}
+body.login:not(.interim-login) .bw-lang .bw-lang-item.is-current {
+  background: #E0E05C;
+  color: #191E1C;
+}
+/* Im Code-Schritt keine Sprachwahl: ein Wechsel wuerde die Anmeldung neu starten. */
+body.login:has(form[name="validate_2fa_form"]) .bw-lang { display: none; }
+
+@media (max-width: 760px) {
+  body.login:not(.interim-login) .bw-lang {
+    position: static;
+    margin: 20px 0 0;
+  }
+}
+
 /* ---------- Fusszeile ---------- */
 body.login:not(.interim-login)::after {
-  content: "Technische Betreuung durch Beyondweb GmbH";
+  content: var(--bw-t-footer, "Technische Betreuung durch Beyondweb GmbH");
   display: block;
   box-sizing: border-box;
   margin: 28px auto 0;

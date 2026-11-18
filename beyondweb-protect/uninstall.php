@@ -5,7 +5,7 @@
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
-foreach ( array( 'bw_protect_logo', 'bw_protect_logo_id', 'bw_protect_logo_light', 'bw_protect_disabled_modules' ) as $bw_protect_option ) {
+foreach ( array( 'bw_protect_logo', 'bw_protect_logo_id', 'bw_protect_logo_light', 'bw_protect_lang_switcher', 'bw_protect_upload_max_image', 'bw_protect_upload_max_file', 'bw_protect_disabled_modules' ) as $bw_protect_option ) {
 	delete_option( $bw_protect_option );
 }
 
