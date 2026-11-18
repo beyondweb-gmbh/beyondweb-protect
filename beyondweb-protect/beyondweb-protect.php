@@ -3,7 +3,7 @@
  * Plugin Name:       Beyondweb Protect
  * Plugin URI:        https://www.beyondweb.ch
  * Description:       Standards fuer Websites, die Beyondweb technisch betreut. Module: Login, Path, Mail, Uploads, REST.
- * Version:           1.0.5
+ * Version:           1.0.6
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Beyondweb GmbH
@@ -18,7 +18,7 @@ if ( defined( 'BW_PROTECT_VERSION' ) ) {
 	return; // Schon geladen.
 }
 
-define( 'BW_PROTECT_VERSION', '1.0.5' );
+define( 'BW_PROTECT_VERSION', '1.0.6' );
 define( 'BW_PROTECT_LOGO_DEFAULT', 'auto' );
 define( 'BW_PROTECT_DIR', __DIR__ );
 
@@ -56,7 +56,7 @@ function bw_protect_log( $message ) {
  * wp option update bw_protect_disabled_modules '["login"]' --format=json
  *
  * login    Login-Seite: Design, Logo, Sprachwahl, eigene Texte
- * mail     Mails zu Anmeldecode, Passwort zuruecksetzen und neuem Konto
+ * mail     Mails zu Anmeldecode, Passwort zuruecksetzen, neuem Konto, geaendertem Passwort und geaenderter Adresse
  * uploads  Groessenlimit fuer Uploads in die Mediathek
  * rest     Benutzerliste der REST-Schnittstelle nur fuer angemeldete Benutzer
  * path     Login-Pfad von ASE Pro vor dem Auslesen schuetzen

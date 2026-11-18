@@ -630,6 +630,25 @@ function bw_protect_login_language_nav() {
 add_action( 'login_init', function () {
 	add_filter( 'gettext', bw_protect_guard( 'bw_protect_login_gettext' ), 20, 3 );
 	add_filter( 'gettext_with_context', bw_protect_guard( 'bw_protect_login_gettext_context' ), 20, 4 );
+	add_filter( 'ngettext', bw_protect_guard( 'bw_protect_login_ngettext' ), 20, 5 );
+
+	// Hinweis zu den Passwortregeln auf der Seite «Neues Passwort». ASE Pro baut ihn aus
+	// seinen Regeln. Die Regeln werden hier nur mitgelesen, der Hinweis wird danach in der
+	// Sprache der Login-Seite neu formuliert.
+	add_filter(
+		'asenha_password_policy_hint_parts',
+		bw_protect_guard(
+			function ( $parts, $policy = array() ) {
+				if ( is_array( $policy ) ) {
+					$GLOBALS['bw_protect_pw_policy'] = $policy;
+				}
+				return $parts;
+			}
+		),
+		9999,
+		2
+	);
+	add_filter( 'password_hint', bw_protect_guard( 'bw_protect_login_password_hint' ), 9999 );
 } );
 
 function bw_protect_login_on_login_page() {
@@ -641,19 +660,50 @@ function bw_protect_login_gettext( $translation, $text, $domain ) {
 		return $translation;
 	}
 
-	if ( 'default' === $domain && 'Username or Email Address' === $text && bw_protect_login_email_only() ) {
-		$t = bw_protect_texts();
-		return $t['email_label'];
+	if ( 'default' === $domain ) {
+		if ( 'Username or Email Address' === $text && bw_protect_login_email_only() ) {
+			$t = bw_protect_texts();
+			return $t['email_label'];
+		}
+		// Meldungen von WordPress in der du-Form, passend zu den eigenen Texten (nur Deutsch).
+		static $core = null;
+		if ( null === $core ) {
+			$core = bw_protect_core_du();
+			if ( bw_protect_login_email_only() ) {
+				$key          = 'Please enter your username or email address. You will receive an email message with instructions on how to reset your password.';
+				$core[ $key ] = str_replace( 'deinen Benutzernamen oder deine E-Mail-Adresse', 'deine E-Mail-Adresse', $core[ $key ] );
+				$key          = 'Unknown email address. Check again or try your username.';
+				$core[ $key ] = str_replace( ' oder versuche es mit deinem Benutzernamen', '', $core[ $key ] );
+			}
+		}
+		// Erst der guenstige Abgleich, dann die Sprache: der Filter laeuft bei jedem Text der Seite.
+		if ( isset( $core[ $text ] ) && 'de' === bw_protect_lang() ) {
+			return $core[ $text ];
+		}
+		return $translation;
 	}
 
 	if ( 'admin-site-enhancements' !== $domain ) {
 		return $translation;
 	}
 
+	// Sperre nach zu vielen Fehlversuchen: ASE Pro liefert die Restdauer nur auf Englisch.
+	// Steht sie als Zahl bereit, wird sie in der Sprache der Seite eingesetzt.
+	if ( '<b>WARNING:</b> You\'ve been locked out. You can login again in %s.' === $text ) {
+		$t    = bw_protect_texts();
+		$left = isset( $GLOBALS['asenha_limit_login']['lockout_period_remaining'] ) ? (int) $GLOBALS['asenha_limit_login']['lockout_period_remaining'] : 0;
+		if ( $left > 0 ) {
+			$now = time();
+			return str_replace( '%', '%%', sprintf( $t['lockout'], human_time_diff( $now, $now + $left ) ) );
+		}
+		return $t['lockout_later']; // Ohne Zahl lieber keine Dauer als eine englische.
+	}
+
 	static $maps = array();
 	$lang = bw_protect_lang();
 	if ( ! isset( $maps[ $lang ] ) ) {
 		$t             = bw_protect_texts();
+		$needs         = $t['pw_intro'] . ' %s.';
 		$maps[ $lang ] = array(
 			'A verification code has been sent to the email address associated with your account.' => bw_protect_login_email_prompt(),
 			'Verification Code:'        => $t['code_label'],
@@ -665,10 +715,77 @@ function bw_protect_login_gettext( $translation, $text, $domain ) {
 			'Enter a recovery code.'    => $t['backup_prompt'],
 			'Recovery Code:'            => $t['backup_label'],
 			'<strong>Error:</strong> Invalid email or incorrect password.' => $t['error'],
+			'Error:'                    => $t['error_label'],
+			'Invalid username/email or incorrect password.' => bw_protect_login_email_only() ? $t['error_login'] : $t['error_login_user'],
+			'ERROR: Invalid code.'      => $t['code_invalid'],
+			'ERROR: Too many invalid codes, you can try again in %s. This limit protects your account against automated attacks.' => $t['code_locked'],
+			'There have been too many failed two-factor authentication attempts, which often indicates that the password has been compromised. The password has been reset in order to protect the account.' => $t['forced_reset'],
+			'If you are the owner of this account, please check your email for instructions on regaining access.' => $t['forced_reset_hint'],
+			'The password must include an uppercase letter.' => sprintf( $needs, $t['pw_upper'] ),
+			'The password must include a lowercase letter.' => sprintf( $needs, $t['pw_lower'] ),
+			'The password must include a digit.' => sprintf( $needs, $t['pw_digit'] ),
+			'The password must include a special character.' => sprintf( $needs, $t['pw_special'] ),
 		);
 	}
 
 	return isset( $maps[ $lang ][ $text ] ) ? $maps[ $lang ][ $text ] : $translation;
+}
+
+/**
+ * Meldungen von ASE Pro mit Einzahl und Mehrzahl.
+ */
+function bw_protect_login_ngettext( $translation, $single, $plural, $number, $domain ) {
+	if ( 'admin-site-enhancements' !== $domain || ! bw_protect_login_on_login_page() ) {
+		return $translation;
+	}
+	$t = bw_protect_texts();
+	if ( 0 === strpos( $single, 'WARNING: Your account has attempted to login %1$s time without providing a valid two factor token.' ) ) {
+		return 1 === (int) $number ? $t['warn_one'] : $t['warn_many'];
+	}
+	switch ( $single ) {
+		case 'The password must be at least %d character long.':
+			return $t['pw_intro'] . ' ' . $t[ 1 === (int) $number ? 'pw_len_one' : 'pw_len' ] . '.';
+		case 'The password must contain at least %d unique character.':
+			return $t['pw_intro'] . ' ' . $t[ 1 === (int) $number ? 'pw_unique_one' : 'pw_unique' ] . '.';
+		case 'The password must not be longer than %d character.':
+			return $t['pw_max'];
+	}
+	return $translation;
+}
+
+/* -------------------------------------------------------------------------
+ * Hinweis zu den Passwortregeln auf der Seite «Neues Passwort»
+ * ---------------------------------------------------------------------- */
+
+function bw_protect_login_password_hint( $hint ) {
+	if ( empty( $GLOBALS['bw_protect_pw_policy'] ) || ! is_array( $GLOBALS['bw_protect_pw_policy'] ) ) {
+		return $hint;
+	}
+	$policy = $GLOBALS['bw_protect_pw_policy'];
+	$t      = bw_protect_texts();
+	$items  = array();
+
+	$min = isset( $policy['min_length'] ) ? absint( $policy['min_length'] ) : 0;
+	if ( $min > 0 ) {
+		$items[] = sprintf( $t[ 1 === $min ? 'pw_len_one' : 'pw_len' ], $min );
+	}
+	foreach ( array( 'require_uppercase' => 'pw_upper', 'require_lowercase' => 'pw_lower', 'require_digit' => 'pw_digit', 'require_special' => 'pw_special' ) as $rule => $key ) {
+		if ( ! empty( $policy[ $rule ] ) ) {
+			$items[] = $t[ $key ];
+		}
+	}
+	$unique = isset( $policy['min_unique_chars'] ) ? absint( $policy['min_unique_chars'] ) : 0;
+	if ( $unique > 1 ) { // Ein einziges verschiedenes Zeichen ist keine Regel.
+		$items[] = sprintf( $t['pw_unique'], $unique );
+	}
+	if ( ! $items ) {
+		return $hint;
+	}
+
+	$last = array_pop( $items );
+	$list = $items ? implode( ', ', $items ) . ' ' . $t['pw_and'] . ' ' . $last : $last;
+
+	return esc_html( $t['pw_intro'] . ' ' . $list . '.' );
 }
 
 function bw_protect_login_gettext_context( $translation, $text, $context, $domain ) {

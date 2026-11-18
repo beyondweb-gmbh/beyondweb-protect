@@ -20,7 +20,8 @@ defined( 'ABSPATH' ) || exit;
 add_filter( 'wp_handle_upload_prefilter', bw_protect_guard( 'bw_protect_uploads_check' ), 20 );
 add_filter( 'wp_handle_sideload_prefilter', bw_protect_guard( 'bw_protect_uploads_check' ), 20 ); // REST-Upload als Rohdaten.
 add_filter( 'wp_upload_bits', bw_protect_guard( 'bw_protect_uploads_check_bits' ), 20 );          // XML-RPC.
-add_action( 'post-upload-ui', bw_protect_guard( 'bw_protect_uploads_hint' ) );
+add_action( 'pre-upload-ui', bw_protect_guard( 'bw_protect_uploads_hint_start' ) );
+add_action( 'post-upload-ui', bw_protect_guard( 'bw_protect_uploads_hint_end' ) );
 
 /**
  * Limit in Bytes fuer Bilder ('image') oder andere Dateien ('file'). 0 = kein Limit.
@@ -131,14 +132,47 @@ function bw_protect_uploads_check_bits( $upload ) {
 }
 
 /**
- * Hinweis unter dem Upload-Feld der Mediathek.
+ * Hinweis im Upload-Feld der Mediathek. WordPress zeigt dort die technische Obergrenze
+ * des Servers («Maximale Dateigroesse fuer Uploads»). Solange das Upload-Feld ausgegeben
+ * wird, steht an dieser Stelle der Hinweis mit den eigenen Limits.
  */
-function bw_protect_uploads_hint() {
+function bw_protect_uploads_hint_text() {
 	$image = bw_protect_uploads_limit( 'image' );
 	$other = bw_protect_uploads_limit( 'file' );
 	if ( $image <= 0 || $other <= 0 ) {
-		return;
+		return ''; // Ohne beide Limits bleibt die Angabe von WordPress.
+	}
+	// Liegt die Obergrenze des Servers tiefer, gilt sie: Der Hinweis verspricht nie mehr, als hochgeladen werden kann.
+	$server = (int) wp_max_upload_size();
+	if ( $server > 0 ) {
+		$image = min( $image, $server );
+		$other = min( $other, $server );
 	}
 	$t = bw_protect_texts( bw_protect_lang( get_user_locale() ) );
-	echo '<p class="bw-protect-upload-hint">' . esc_html( sprintf( $t['upload_hint'], size_format( $image ), size_format( $other ) ) ) . '</p>';
+	return sprintf( $t['upload_hint'], size_format( $image ), size_format( $other ) );
+}
+
+function bw_protect_uploads_hint_start() {
+	if ( '' === bw_protect_uploads_hint_text() ) {
+		return;
+	}
+	$GLOBALS['bw_protect_upload_ui'] = true;
+	static $added = false;
+	if ( ! $added ) {
+		$added = true;
+		add_filter( 'gettext', bw_protect_guard( 'bw_protect_uploads_hint_gettext' ), 20, 3 );
+	}
+}
+
+function bw_protect_uploads_hint_end() {
+	$GLOBALS['bw_protect_upload_ui'] = false;
+}
+
+function bw_protect_uploads_hint_gettext( $translation, $text, $domain ) {
+	if ( empty( $GLOBALS['bw_protect_upload_ui'] ) || 'default' !== $domain || 'Maximum upload file size: %s.' !== $text ) {
+		return $translation;
+	}
+	$hint = bw_protect_uploads_hint_text();
+	// WordPress setzt den Text noch in printf ein: Prozentzeichen maskieren.
+	return '' !== $hint ? str_replace( '%', '%%', $hint ) : $translation;
 }

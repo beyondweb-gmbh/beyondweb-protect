@@ -4,9 +4,9 @@ WordPress-Plugin für Websites, die Beyondweb technisch betreut. Fünf Module:
 
 | Modul | Was es macht |
 |---|---|
-| `login` | Einheitliche Login-Seite, Kundenlogo automatisch, eigene Texte in Deutsch, Französisch, Italienisch und Englisch, Sprachwahl auf mehrsprachigen Websites |
+| `login` | Einheitliche Login-Seite samt «Neues Passwort» und Anmeldefenster bei abgelaufener Sitzung, Kundenlogo automatisch, eigene Texte und die Meldungen von ASE Pro in Deutsch, Französisch, Italienisch und Englisch, Sprachwahl auf mehrsprachigen Websites |
 | `path` | Schützt den eigenen Login-Pfad von ASE Pro («Change Login URL») vor dem Auslesen |
-| `mail` | Schlichte Mails ohne Farben und Bilder für Anmeldecode (2FA von ASE Pro), Passwort zurücksetzen und neues Konto |
+| `mail` | Schlichte Mails ohne Farben und Bilder für Anmeldecode (2FA von ASE Pro), Passwort zurücksetzen, neues Konto, Passwort geändert und E-Mail-Adresse geändert |
 | `uploads` | Grössenlimit für Uploads in die Mediathek: Bilder 2 MB, alle anderen Dateien 10 MB, mit verständlicher Fehlermeldung |
 | `rest` | Benutzerliste der REST-Schnittstelle nur für angemeldete Benutzer |
 
@@ -15,7 +15,7 @@ Das Plugin hat keine Einstellungsseite, keine eigenen REST- oder AJAX-Endpunkte 
 ## Installation und Update (WP-CLI, z. B. über Kinsta)
 
 ```
-wp plugin install https://github.com/beyondweb-gmbh/beyondweb-protect/releases/download/v1.0.5/beyondweb-protect-1.0.5.zip --activate --force
+wp plugin install https://github.com/beyondweb-gmbh/beyondweb-protect/releases/download/v1.0.6/beyondweb-protect-1.0.6.zip --activate --force
 ```
 
 Derselbe Befehl aktualisiert eine bestehende Installation. Zurück auf eine ältere Version: denselben Befehl mit der älteren Versionsnummer.
@@ -37,13 +37,17 @@ Grenzen: Wer ein Konto hat, kennt den Pfad oder kann ihn erfahren. Gibt das Them
 
 ## Sprache
 
-Login-Seite und Mails erscheinen in der Sprache der Website. Die eigenen Texte gibt es in Deutsch, Französisch, Italienisch und Englisch, für alle anderen Sprachen gilt Englisch.
+Login-Seite und Mails erscheinen in der Sprache der Website. Die eigenen Texte gibt es in Deutsch, Französisch, Italienisch und Englisch, für alle anderen Sprachen gilt Englisch. Dasselbe gilt für die Meldungen von ASE Pro auf der Login-Seite (falsche Anmeldung, falscher Code, Sperre, Passwortregeln), die ASE Pro nur auf Englisch liefert.
+
+Deutsch ist durchgehend in der du-Form: Auf der Login-Seite ersetzt das Plugin dafür auch die Meldungen von WordPress, die je nach Sprachpaket in der Sie-Form stehen. Französisch bleibt beim «vous», Italienisch beim «tu».
 
 Die Sprachwahl erscheint nur, wenn die Website mindestens zwei Sprachen hat. Massgebend sind die Sprache der Website, die installierten WordPress-Sprachpakete und Englisch, wenn die Website englisch ist oder WPML, Polylang oder TranslatePress Englisch führen. Varianten derselben Sprache (z. B. Deutsch und Deutsch Schweiz) zählen als eine Sprache. Sobald die Sprachwahl erscheint, ist Englisch immer dabei.
 
 ## Uploads
 
 Das Limit gilt für alle Rollen und nur für die Mediathek: Upload-Fenster, «Datei hinzufügen», Block-Editor sowie Uploads über die REST-Schnittstelle (`/wp/v2/media`) und XML-RPC, also auch aus Apps und Fremdsystemen. Plugin- und Theme-Uploads, Importe und Formulare anderer Plugins bleiben unberührt. ASE Pro verkleinert Bilder erst nach dem Upload, das Limit greift vorher.
+
+Im Upload-Feld der Mediathek steht anstelle der technischen Obergrenze des Servers («Maximale Dateigrösse für Uploads») der Hinweis mit den beiden Limits.
 
 ## Schalter pro Site
 
@@ -63,6 +67,6 @@ Die Funktionen des Plugins lassen sich aus anderem Code nicht einzeln per `remov
 ## Neue Version veröffentlichen
 
 1. Version an zwei Stellen in `beyondweb-protect/beyondweb-protect.php` erhöhen, `CHANGELOG.md` ergänzen.
-2. Auf GitHub: Actions, links «Release» wählen, «Run workflow», Version eingeben (z. B. `1.0.5`).
+2. Auf GitHub: Actions, links «Release» wählen, «Run workflow», Version eingeben (z. B. `1.0.6`).
 3. Die Action prüft Version und PHP-Syntax, baut die ZIP und legt das Release `v<version>` mit SHA-256-Prüfsumme an.
 4. Zuerst auf einer Site installieren und die Anmeldung testen, danach gestaffelt ausrollen.

@@ -2,8 +2,9 @@
 /**
  * Beyondweb Protect, Modul «Mail»
  *
- * Schlichte, gut lesbare Mails ohne Farben und Bilder fuer drei Faelle:
- * Anmeldecode (2FA von ASE Pro), Passwort zuruecksetzen, neues Konto.
+ * Schlichte, gut lesbare Mails ohne Farben und Bilder fuer fuenf Faelle:
+ * Anmeldecode (2FA von ASE Pro), Passwort zuruecksetzen, neues Konto,
+ * Passwort geaendert, E-Mail-Adresse geaendert.
  * Das Modul verschickt selbst nichts. Es ersetzt nur Betreff und Inhalt der Mails,
  * die ASE Pro und WordPress ohnehin versenden.
  */
@@ -85,13 +86,23 @@ function bw_protect_mail_p( $html, $margin = 20 ) {
 /**
  * Hervorgehobener Kasten: fuer den Code und fuer Adressen zum Kopieren.
  */
-function bw_protect_mail_box( $text, $big ) {
+function bw_protect_mail_box( $text, $big, $mask = false ) {
 	$style = 'margin:0 0 20px;padding:14px 18px;border:1px solid #c8c8c8;border-radius:8px;background:#f4f4f4;color:#111111;'
 		. "font-family:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace;";
 	$style .= $big
 		? 'font-size:34px;line-height:1.2;font-weight:700;letter-spacing:3px;'
 		: 'font-size:13px;line-height:1.5;word-break:break-all;';
-	return '<p style="' . $style . '">' . esc_html( $text ) . '</p>';
+	return '<p style="' . $style . '">' . ( $mask ? bw_protect_mail_mask( esc_html( $text ) ) : esc_html( $text ) ) . '</p>';
+}
+
+/**
+ * WordPress ersetzt in den Hinweisen «Passwort geaendert» und «E-Mail-Adresse geaendert»
+ * nachtraeglich Platzhalter wie ###ADMIN_EMAIL###. Damit ein eingesetzter Wert (neue Adresse,
+ * Name der Website) keinen solchen Platzhalter bilden kann, wird das Rautezeichen als
+ * HTML-Zeichenreferenz ausgegeben. In der Mail sieht es gleich aus.
+ */
+function bw_protect_mail_mask( $html ) {
+	return str_replace( '#', '&#35;', $html );
 }
 
 /**
@@ -261,4 +272,54 @@ function bw_protect_mail_new_user( $email, $user = null ) {
 	$email['headers'] = bw_protect_mail_headers( isset( $email['headers'] ) ? $email['headers'] : '' );
 
 	return $email;
+}
+
+/* -------------------------------------------------------------------------
+ * Hinweise an das Konto: Passwort geaendert, E-Mail-Adresse geaendert
+ * ---------------------------------------------------------------------- */
+
+add_filter( 'password_change_email', bw_protect_guard( 'bw_protect_mail_password_changed' ), 20, 2 );
+add_filter( 'email_change_email', bw_protect_guard( 'bw_protect_mail_email_changed' ), 20, 3 );
+
+/**
+ * Gemeinsamer Aufbau beider Hinweise. $user ist der bisherige Datensatz des Kontos
+ * als Array, so wie WordPress ihn an die Filter gibt.
+ */
+function bw_protect_mail_account_notice( $email, $user, $kind, $new_address = '' ) {
+	if ( ! is_array( $email ) || ! is_array( $user ) || empty( $user['ID'] ) ) {
+		return $email;
+	}
+
+	$lang  = bw_protect_mail_lang( (int) $user['ID'], false );
+	$t     = bw_protect_texts( $lang );
+	$name  = bw_protect_mail_site_name();
+	$admin = sanitize_email( (string) get_option( 'admin_email' ) );
+	$rows  = array( bw_protect_mail_p( bw_protect_mail_mask( esc_html( sprintf( $t[ 'mail_' . $kind . '_intro' ], $name ) ) ), '' !== $new_address ? 6 : 20 ) );
+
+	if ( '' !== $new_address ) {
+		$rows[] = bw_protect_mail_box( $new_address, false, true );
+	}
+	if ( '' !== $admin ) {
+		$rows[] = bw_protect_mail_p( '<strong>' . esc_html( $t['mail_notme_q'] ) . '</strong> ' . esc_html( $t['mail_notme_a'] ), 6 );
+		$rows[] = bw_protect_mail_box( $admin, false, true );
+	}
+
+	// WordPress schickt den Betreff noch durch sprintf: Prozentzeichen maskieren.
+	$email['subject'] = str_replace( '%', '%%', sprintf( $t[ 'mail_' . $kind . '_subject' ], $name ) );
+	$email['message'] = bw_protect_mail_html( $rows, $lang );
+	$email['headers'] = bw_protect_mail_headers( isset( $email['headers'] ) ? $email['headers'] : '' );
+
+	return $email;
+}
+
+function bw_protect_mail_password_changed( $email, $user = null ) {
+	return bw_protect_mail_account_notice( $email, $user, 'pwc' );
+}
+
+function bw_protect_mail_email_changed( $email, $user = null, $userdata = null ) {
+	$new = is_array( $userdata ) && isset( $userdata['user_email'] ) ? sanitize_email( (string) $userdata['user_email'] ) : '';
+	if ( '' === $new ) {
+		return $email; // Ohne neue Adresse bleibt die Mail von WordPress.
+	}
+	return bw_protect_mail_account_notice( $email, $user, 'emc', $new );
 }

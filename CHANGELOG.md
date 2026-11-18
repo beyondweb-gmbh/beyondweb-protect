@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.6
+- Meldungen von ASE Pro auf der Login-Seite in Deutsch, Französisch, Italienisch und Englisch statt nur Englisch: falsche Anmeldung, falscher Code, Hinweis auf fehlgeschlagene Anmeldungen, Sperre nach zu vielen Versuchen, Passwortregeln.
+- Deutsch durchgehend in der du-Form: Meldungen von WordPress auf der Login-Seite werden angeglichen.
+- Seite «Neues Passwort» im Design der Login-Seite: «Passwort generieren» als zweiter Button, ruhige Anzeige der Passwortstärke, Hinweis zu den Passwortregeln in der Sprache der Seite.
+- Anmeldefenster bei abgelaufener Sitzung im Backend im selben Stil.
+- Modul `mail`: Hinweise «Passwort geändert» und «E-Mail-Adresse geändert» im Stil der übrigen Mails.
+- Modul `uploads`: Im Upload-Feld der Mediathek steht der Hinweis mit den Limits anstelle der Obergrenze des Servers.
+
 ## 1.0.5
 - Sprachwahl auf mehrsprachigen Websites: ein Link je Sprache, oben rechts, auf schmalen Bildschirmen unter der Karte. Englisch ist immer dabei. Auf einsprachigen Websites ändert sich nichts.
 - Eigene Texte in Deutsch, Französisch, Italienisch und Englisch. Die Login-Seite folgt der Sprache der Website, bisher waren die eigenen Texte immer deutsch.

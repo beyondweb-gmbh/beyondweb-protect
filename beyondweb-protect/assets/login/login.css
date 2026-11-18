@@ -1,6 +1,7 @@
 /*!
  * Beyondweb Protect, Modul Login – Stylesheet fuer wp-login.php
- * Deckt ab: Anmeldung, 2FA per E-Mail-Code, Backup-Code (ASE Pro 2FA), Sprachwahl
+ * Deckt ab: Anmeldung, 2FA per E-Mail-Code, Backup-Code (ASE Pro 2FA), Sprachwahl,
+ * neues Passwort festlegen, Anmeldefenster bei abgelaufener Sitzung (interim-login)
  * Logo, Kopf-Variante und Texte (--bw-t-*, je nach Sprache) kommen als CSS-Variablen
  * und Body-Klassen aus dem Plugin. Die deutschen Texte hier sind nur der Rueckfall.
  * Masse sind Variablen, damit die Seite auf niedrigen Bildschirmen ohne Scrollen passt.
@@ -673,4 +674,280 @@ body.login:not(.interim-login)::after {
     justify-content: flex-start;
   }
   .login:not(.interim-login) #login { border-radius: 16px; }
+}
+
+/* ---------- Seite «Neues Passwort» ---------- */
+.login:not(.interim-login) #login form .user-pass1-wrap,
+.login:not(.interim-login) #login form .user-pass2-wrap { margin: 0 0 var(--bw-gap-s); }
+
+/* Anzeige der Passwortstaerke: ruhige Zeile statt farbiger Balken */
+.login:not(.interim-login) #login form #pass-strength-result {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #F1F0EA;
+  color: #454B47;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+  text-align: left;
+}
+.login:not(.interim-login) #login form #pass-strength-result.short,
+.login:not(.interim-login) #login form #pass-strength-result.bad { background: #F9E1DD; color: #8A1F14; }
+.login:not(.interim-login) #login form #pass-strength-result.good { background: #FAF0CC; color: #6B5200; }
+.login:not(.interim-login) #login form #pass-strength-result.strong { background: #E0F0DC; color: #1F5A1C; }
+
+/* Schwaches Passwort bestaetigen: Haken und Text auf einer Zeile.
+   «display» bleibt unberuehrt, WordPress blendet den Block selbst ein und aus. */
+.login:not(.interim-login) #login form .pw-weak { margin: 12px 0 0; line-height: 20px; }
+.login:not(.interim-login) #login form .pw-weak label {
+  display: inline;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #454B47;
+  cursor: pointer;
+}
+.login:not(.interim-login) #login form .pw-weak input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: -2px 10px 0 0;
+  border: 1px solid #D2D0C6;
+  border-radius: 4px;
+  box-shadow: none;
+  vertical-align: middle;
+  accent-color: #161A18;
+}
+.login:not(.interim-login) #login form .pw-weak input[type="checkbox"]:checked {
+  background: #161A18;
+  border-color: #161A18;
+}
+.login:not(.interim-login) #login form .pw-weak input[type="checkbox"]:checked::before {
+  filter: brightness(0) invert(1);
+  margin: -3px 0 0 -4px;
+}
+
+/* Hinweis zu den Passwortregeln */
+.login:not(.interim-login) #login form p.indicator-hint {
+  margin: 0 0 var(--bw-gap);
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6C726D;
+}
+
+/* «Passwort generieren» als zweiter Button ueber dem Hauptbutton */
+.login:not(.interim-login) #login form p.reset-pass-submit {
+  flex-flow: column nowrap;
+  gap: 12px;
+}
+.login:not(.interim-login) #login form .button.wp-generate-pw,
+.login.wp-core-ui:not(.interim-login) #login form .button.wp-generate-pw {
+  box-sizing: border-box;
+  float: none;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 20px;
+  border: 1px solid #161A18;
+  border-radius: 999px;
+  background: #FFFFFF;
+  box-shadow: none;
+  text-shadow: none;
+  color: #161A18;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 42px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.login:not(.interim-login) #login form .button.wp-generate-pw:hover { background: #F3F2EC; color: #161A18; border-color: #161A18; }
+.login:not(.interim-login) #login form .button.wp-generate-pw:focus-visible {
+  outline: 2px solid #161A18;
+  outline-offset: 3px;
+  box-shadow: none;
+}
+.login:not(.interim-login) #login form .button-primary:disabled,
+.login.wp-core-ui:not(.interim-login) #login #wp-submit.button-primary:disabled {
+  background: #E6E5DF !important;
+  color: #8A908B !important;
+  cursor: not-allowed;
+}
+
+/* ---------- Anmeldefenster bei abgelaufener Sitzung (interim-login) ---------- */
+/* WordPress zeigt es im Backend in einem kleinen Fenster. Schlicht, ohne Logo und Karte. */
+body.login.interim-login {
+  background: #FFFFFF !important;
+  font-family: "BW Nunito Sans", "Avenir Next", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #454B47;
+}
+.login.interim-login #login {
+  box-sizing: border-box;
+  width: 320px;
+  max-width: calc(100% - 24px);
+  margin: 0 auto;
+  padding: 16px 0 12px;
+}
+.login.interim-login #login h1 { display: none; }
+.login.interim-login .bw-lang,
+.login.interim-login .language-switcher { display: none !important; }
+
+.login.interim-login #login #login_error,
+.login.interim-login #login .message,
+.login.interim-login #login .notice,
+.login.interim-login #login .success {
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  border: 0;
+  border-left: 4px solid #E0E05C;
+  border-radius: 8px;
+  background: #F7F6F1;
+  box-shadow: none;
+  color: #161A18;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.login.interim-login #login #login_error { border-left-color: #C0392B; }
+
+.login.interim-login #login form {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.login.interim-login #login form p { margin: 0; }
+.login.interim-login #login form > p:first-of-type,
+.login.interim-login #login form .user-pass-wrap { margin: 0 0 16px; }
+.login.interim-login #login form label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #161A18;
+}
+.login.interim-login #login form input[type="text"],
+.login.interim-login #login form input[type="email"],
+.login.interim-login #login form input[type="password"] {
+  box-sizing: border-box;
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 16px;
+  border: 1px solid #D2D0C6;
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: none;
+  color: #161A18;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.2;
+  outline: none;
+}
+.login.interim-login #login form input[type="text"]:focus,
+.login.interim-login #login form input[type="email"]:focus,
+.login.interim-login #login form input[type="password"]:focus {
+  border-color: #161A18;
+  box-shadow: 0 0 0 3px rgba(224, 224, 92, .45);
+}
+.login.interim-login #login form .wp-pwd { position: relative; margin: 0; }
+.login.interim-login #login form .wp-pwd input[type="password"],
+.login.interim-login #login form .wp-pwd input[type="text"] { padding-right: 50px; }
+.login.interim-login #login .wp-pwd .button.wp-hide-pw {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #6C726D;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login.interim-login #login .wp-pwd .button.wp-hide-pw:focus {
+  box-shadow: 0 0 0 2px #161A18;
+  border-radius: 10px;
+}
+.login.interim-login #login .wp-pwd .button.wp-hide-pw .dashicons {
+  top: 0;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+.login.interim-login #login form .forgetmenot {
+  float: none;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  margin: 0 0 20px;
+  padding: 0;
+}
+.login.interim-login #login form .forgetmenot label {
+  display: inline;
+  margin: 0;
+  font-weight: 400;
+  color: #454B47;
+  cursor: pointer;
+}
+.login.interim-login #login form .forgetmenot input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0 10px 0 0;
+  border: 1px solid #D2D0C6;
+  border-radius: 4px;
+  box-shadow: none;
+  accent-color: #161A18;
+}
+.login.interim-login #login form .forgetmenot input[type="checkbox"]:checked {
+  background: #161A18;
+  border-color: #161A18;
+}
+.login.interim-login #login form .forgetmenot input[type="checkbox"]:checked::before {
+  filter: brightness(0) invert(1);
+  margin: -3px 0 0 -4px;
+}
+.login.interim-login #login form .forgetmenot .wp-tooltip { display: none; }
+.login.interim-login #login form p.submit { float: none; display: block; }
+.login.interim-login #login form .button-primary,
+.login.wp-core-ui.interim-login #login #wp-submit.button-primary {
+  box-sizing: border-box;
+  float: none;
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 999px;
+  background: #E0E05C;
+  box-shadow: none;
+  text-shadow: none;
+  color: #191E1C;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 48px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.login.interim-login #login form .button-primary:hover,
+.login.wp-core-ui.interim-login #login #wp-submit.button-primary:hover { background: #D2D24A; color: #191E1C; }
+.login.interim-login #login form .button-primary:focus-visible {
+  outline: 2px solid #161A18;
+  outline-offset: 3px;
+  box-shadow: none;
 }
