@@ -362,6 +362,8 @@ function bw_protect_texts( $lang = '' ) {
 function bw_protect_core_du() {
 	return array(
 		'You are now logged out.'                        => 'Du hast dich abgemeldet.',
+		'You are attempting to log out of %s'            => 'Du bist dabei, dich von %s abzumelden.',
+		'Do you really want to <a href="%s">log out</a>?' => 'Möchtest du dich wirklich <a href="%s">abmelden</a>?',
 		'You have logged in successfully.'               => 'Du bist angemeldet.',
 		'Your session has expired. Please log in to continue where you left off.' => 'Deine Sitzung ist abgelaufen. Melde dich an, um weiterzuarbeiten.',
 		'Please log in again.'                           => 'Bitte melde dich erneut an.',

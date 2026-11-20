@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Beyondweb Protect
  * Plugin URI:        https://www.beyondweb.ch
- * Description:       Standards fuer Websites, die Beyondweb technisch betreut. Module: Login, Path, Mail, Uploads, REST.
- * Version:           1.0.6
+ * Description:       Standards fuer Websites, die Beyondweb technisch betreut. Module: Login, Path, Mail, Uploads, REST, TwoFA.
+ * Version:           1.0.7
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Beyondweb GmbH
@@ -18,7 +18,7 @@ if ( defined( 'BW_PROTECT_VERSION' ) ) {
 	return; // Schon geladen.
 }
 
-define( 'BW_PROTECT_VERSION', '1.0.6' );
+define( 'BW_PROTECT_VERSION', '1.0.7' );
 define( 'BW_PROTECT_LOGO_DEFAULT', 'auto' );
 define( 'BW_PROTECT_DIR', __DIR__ );
 
@@ -60,11 +60,12 @@ function bw_protect_log( $message ) {
  * uploads  Groessenlimit fuer Uploads in die Mediathek
  * rest     Benutzerliste der REST-Schnittstelle nur fuer angemeldete Benutzer
  * path     Login-Pfad von ASE Pro vor dem Auslesen schuetzen
+ * twofa    Anmeldecode per E-Mail (ASE Pro) schon bei der ersten Anmeldung einschalten
  *
  * Ein Fehler in einem Modul darf die Website nicht blockieren:
  * Das Modul wird uebersprungen und der Fehler ins Log geschrieben.
  */
-$bw_protect_modules  = array( 'texts', 'login', 'path', 'mail', 'uploads', 'rest' ); // texts = gemeinsame Texte, immer zuerst.
+$bw_protect_modules  = array( 'texts', 'login', 'path', 'mail', 'uploads', 'rest', 'twofa' ); // texts = gemeinsame Texte, immer zuerst.
 $bw_protect_disabled = (array) get_option( 'bw_protect_disabled_modules', array() );
 
 foreach ( $bw_protect_modules as $bw_protect_module ) {

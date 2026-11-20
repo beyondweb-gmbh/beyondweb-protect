@@ -99,10 +99,13 @@ function bw_protect_mail_box( $text, $big, $mask = false ) {
  * WordPress ersetzt in den Hinweisen «Passwort geaendert» und «E-Mail-Adresse geaendert»
  * nachtraeglich Platzhalter wie ###ADMIN_EMAIL###. Damit ein eingesetzter Wert (neue Adresse,
  * Name der Website) keinen solchen Platzhalter bilden kann, wird das Rautezeichen als
- * HTML-Zeichenreferenz ausgegeben. In der Mail sieht es gleich aus.
+ * HTML-Zeichenreferenz ausgegeben. In der Mail sieht es gleich aus. Ausgenommen ist das
+ * Rautezeichen direkt nach «&»: Es gehoert zu einer Zeichenreferenz, die esc_html() selbst
+ * erzeugt hat (z. B. &#039; fuer den Apostroph). Drei Rautezeichen in Folge bleiben so nie stehen.
  */
 function bw_protect_mail_mask( $html ) {
-	return str_replace( '#', '&#35;', $html );
+	$masked = preg_replace( '/(?<!&)#/', '&#35;', (string) $html );
+	return null === $masked ? str_replace( '#', '&#35;', (string) $html ) : $masked;
 }
 
 /**

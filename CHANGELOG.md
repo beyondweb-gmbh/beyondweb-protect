@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.7
+- Neues Modul `twofa`: Verlangt ASE Pro für ein Konto den Anmeldecode per E-Mail, schaltet das Plugin ihn bei der ersten Anmeldung ein, sobald das Passwort stimmt. Der Code gilt damit schon für diese Anmeldung. Bisher aktivierte ASE Pro den Code erst beim Öffnen des Profils im Backend, mit englischen Hinweisen. Bei einer offenen Sitzung wird der Code beim nächsten Seitenaufruf im Backend eingeschaltet, ohne Umleitung aufs Profil. Ob die Pflicht gilt, bestimmt weiterhin ASE Pro.
+- Vor dem Update beachten: Ist die 2FA von ASE Pro auf einer Website schon aktiv und dort die Option «Enable the email method by default» eingeschaltet, stellt das neue Modul alle Konten der Pflichtrollen bei der nächsten Anmeldung oder beim nächsten Seitenaufruf im Backend auf den Code per E-Mail um, auch Administrator-Konten und ohne Frist. Diese Konten haben keine Backup-Codes. Vorher den Mailversand der Website prüfen, Details und Notausgang im README.
+- Anmeldefenster bei abgelaufener Sitzung, Schritt mit dem Code: «Bestätigen» als Hauptbutton, «Code erneut senden» als Link darunter, wie auf der Login-Seite. Das Fenster bleibt auch nach einem falschen Code und nach «Code erneut senden» im Fenster-Design.
+- Seite «Administrator-E-Mail bestätigen»: «Aktualisieren» als zweiter Button über dem Hauptbutton.
+- Korrektur: In den Mails «Passwort geändert» und «E-Mail-Adresse geändert» erschien ein Apostroph im Namen der Website oder in der Adresse als `&#039;`.
+- Rückfrage von WordPress beim Abmelden ohne gültigen Link in der du-Form.
+
 ## 1.0.6
 - Meldungen von ASE Pro auf der Login-Seite in Deutsch, Französisch, Italienisch und Englisch statt nur Englisch: falsche Anmeldung, falscher Code, Hinweis auf fehlgeschlagene Anmeldungen, Sperre nach zu vielen Versuchen, Passwortregeln.
 - Deutsch durchgehend in der du-Form: Meldungen von WordPress auf der Login-Seite werden angeglichen.

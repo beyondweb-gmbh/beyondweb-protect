@@ -1,7 +1,8 @@
 /*!
  * Beyondweb Protect, Modul Login – Stylesheet fuer wp-login.php
  * Deckt ab: Anmeldung, 2FA per E-Mail-Code, Backup-Code (ASE Pro 2FA), Sprachwahl,
- * neues Passwort festlegen, Anmeldefenster bei abgelaufener Sitzung (interim-login)
+ * neues Passwort festlegen, Administrator-E-Mail bestaetigen,
+ * Anmeldefenster bei abgelaufener Sitzung (interim-login) samt Schritt mit dem Code
  * Logo, Kopf-Variante und Texte (--bw-t-*, je nach Sprache) kommen als CSS-Variablen
  * und Body-Klassen aus dem Plugin. Die deutschen Texte hier sind nur der Rueckfall.
  * Masse sind Variablen, damit die Seite auf niedrigen Bildschirmen ohne Scrollen passt.
@@ -947,6 +948,157 @@ body.login.interim-login {
 .login.interim-login #login form .button-primary:hover,
 .login.wp-core-ui.interim-login #login #wp-submit.button-primary:hover { background: #D2D24A; color: #191E1C; }
 .login.interim-login #login form .button-primary:focus-visible {
+  outline: 2px solid #161A18;
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+/* Anmeldefenster, Schritt «Code aus der E-Mail» und Backup-Code (2FA von ASE Pro) */
+.login.interim-login #login form p.two-factor-prompt {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #454B47;
+}
+.login.interim-login #login form p.two-factor-prompt + p { margin: 0; }
+.login.interim-login #login form input.authcode,
+.login.interim-login #login form input#authcode {
+  height: 56px;
+  min-height: 56px;
+  border-color: #161A18;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: .4em;
+}
+.login.interim-login #login form input#authcode::placeholder { color: #8A908B; opacity: .6; }
+.login.interim-login #login form .two-factor-prompt-email-ctas {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  margin: 16px 0 0;
+}
+.login.interim-login #login form .asenha-2fa-verify-btn,
+.login.interim-login #login form .asenha-2fa-recovery-verify-btn {
+  box-sizing: border-box;
+  float: none;
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 999px;
+  background: #E0E05C;
+  box-shadow: none;
+  text-shadow: none;
+  color: #191E1C;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 48px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+.login.interim-login #login form .asenha-2fa-verify-btn:hover,
+.login.interim-login #login form .asenha-2fa-recovery-verify-btn:hover { background: #D2D24A; color: #191E1C; }
+.login.interim-login #login form .asenha-2fa-action-btn:focus-visible {
+  outline: 2px solid #161A18;
+  outline-offset: 3px;
+  box-shadow: none;
+}
+.login.interim-login #login form .asenha-2fa-btn-text { line-height: 1.2; }
+.login.interim-login #login form .asenha-2fa-btn-checkmark { margin-left: 6px; }
+.login.interim-login #login form .two-factor-email-resend {
+  display: flex;
+  justify-content: center;
+  margin: 0 !important;
+  padding: 0;
+}
+.login.interim-login #login form .asenha-2fa-resend-btn {
+  height: 24px;
+  min-height: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #161A18;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 24px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: #E0E05C;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+  cursor: pointer;
+}
+.login.interim-login #login form .asenha-2fa-resend-btn:hover { background: transparent; color: #000; }
+.login.interim-login #login form .asenha-2fa-resend-btn .asenha-2fa-btn-text { line-height: 24px; }
+.login.interim-login #login .backup-methods-wrap {
+  margin: 12px 0 0 !important;
+  padding: 0 !important;
+  border-radius: 0;
+  background: transparent;
+  font-size: 14px;
+  line-height: 24px;
+}
+.login.interim-login #login .backup-methods-wrap > p { display: none; }
+.login.interim-login #login .backup-methods-wrap ul { margin: 0; padding: 0; list-style: none; }
+.login.interim-login #login .backup-methods-wrap a {
+  color: #454B47;
+  text-decoration: underline;
+  text-decoration-color: #D2D0C6;
+  text-underline-offset: 4px;
+}
+.login.interim-login #login .backup-methods-wrap a:hover { color: #161A18; }
+.login.interim-login #login .backup-methods-wrap a:focus,
+.login.interim-login #login form .asenha-2fa-resend-btn:focus { box-shadow: none; }
+.login.interim-login #login .backup-methods-wrap a:focus-visible {
+  outline: 2px solid #161A18;
+  outline-offset: 3px;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+/* ---------- Seite «Administrator-E-Mail bestaetigen» ---------- */
+/* «Aktualisieren» als zweiter Button ueber dem Hauptbutton, wie «Passwort generieren». */
+.login:not(.interim-login) #login form .admin-email__actions-primary {
+  display: flex;
+  flex-flow: column nowrap;
+  gap: 12px;
+}
+.login:not(.interim-login) #login form .admin-email__actions-primary a.button,
+.login.wp-core-ui:not(.interim-login) #login form .admin-email__actions-primary a.button {
+  box-sizing: border-box;
+  display: block;
+  float: none;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 20px;
+  border: 1px solid #161A18;
+  border-radius: 999px;
+  background: #FFFFFF;
+  box-shadow: none;
+  text-shadow: none;
+  color: #161A18;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 42px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.login:not(.interim-login) #login form .admin-email__actions-primary a.button:hover { background: #F3F2EC; color: #161A18; border-color: #161A18; }
+.login:not(.interim-login) #login form .admin-email__actions-primary a.button:focus-visible {
   outline: 2px solid #161A18;
   outline-offset: 3px;
   box-shadow: none;

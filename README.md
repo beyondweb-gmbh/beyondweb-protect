@@ -1,6 +1,6 @@
 # Beyondweb Protect
 
-WordPress-Plugin für Websites, die Beyondweb technisch betreut. Fünf Module:
+WordPress-Plugin für Websites, die Beyondweb technisch betreut. Sechs Module:
 
 | Modul | Was es macht |
 |---|---|
@@ -9,13 +9,14 @@ WordPress-Plugin für Websites, die Beyondweb technisch betreut. Fünf Module:
 | `mail` | Schlichte Mails ohne Farben und Bilder für Anmeldecode (2FA von ASE Pro), Passwort zurücksetzen, neues Konto, Passwort geändert und E-Mail-Adresse geändert |
 | `uploads` | Grössenlimit für Uploads in die Mediathek: Bilder 2 MB, alle anderen Dateien 10 MB, mit verständlicher Fehlermeldung |
 | `rest` | Benutzerliste der REST-Schnittstelle nur für angemeldete Benutzer |
+| `twofa` | Schaltet den Anmeldecode per E-Mail (2FA von ASE Pro) schon bei der ersten Anmeldung ein, statt erst beim Öffnen des Profils |
 
 Das Plugin hat keine Einstellungsseite, keine eigenen REST- oder AJAX-Endpunkte und baut keine Verbindungen nach aussen auf. Es verschickt selbst keine Mails, sondern ersetzt nur Betreff und Inhalt der Mails, die ASE Pro und WordPress ohnehin versenden. Die Sicherheitseinstellungen selbst bleiben in ASE Pro.
 
 ## Installation und Update (WP-CLI, z. B. über Kinsta)
 
 ```
-wp plugin install https://github.com/beyondweb-gmbh/beyondweb-protect/releases/download/v1.0.6/beyondweb-protect-1.0.6.zip --activate --force
+wp plugin install https://github.com/beyondweb-gmbh/beyondweb-protect/releases/download/v1.0.7/beyondweb-protect-1.0.7.zip --activate --force
 ```
 
 Derselbe Befehl aktualisiert eine bestehende Installation. Zurück auf eine ältere Version: denselben Befehl mit der älteren Versionsnummer.
@@ -34,6 +35,27 @@ ASE Pro verlegt die Login-Seite auf einen eigenen Pfad. Einige Adressen von Word
 Abgesehen davon blockiert das Modul keine Anfrage und ändert nichts an der Anmeldung selbst. Ohne aktiven Login-Pfad in ASE Pro tut es nichts. Der Pfad steht nur in den ASE-Einstellungen der Website, nie in diesem Repository.
 
 Grenzen: Wer ein Konto hat, kennt den Pfad oder kann ihn erfahren. Gibt das Theme auf öffentlichen Seiten selbst einen Login-Link aus, steht der Pfad dort weiterhin. Der Pfad darf kein Wort sein, das WordPress selbst als Adresszusatz verwendet (z. B. `action`, `key`). Der Pfad ersetzt weder 2FA noch Login-Limit.
+
+## Anmeldecode (2FA)
+
+ASE Pro verlangt den Anmeldecode per E-Mail für die Rollen, die in seinen Einstellungen angehakt sind. Eingeschaltet wird er für ein Konto aber erst, wenn dessen Profil im Backend geladen wird. Bis dahin meldet sich die Person ohne Code an und wird je nach Frist auf ihr Profil geleitet, mit englischen Hinweisen.
+
+Das Modul `twofa` zieht diesen Schritt vor:
+
+- Bei der Anmeldung auf `wp-login.php`, sobald das Passwort stimmt. Der Code wird schon für diese Anmeldung verlangt, die Person sieht direkt die Code-Seite.
+- Bei einer offenen Sitzung im Backend, beim nächsten Seitenaufruf und ohne Umleitung aufs Profil. Der Code gilt dann ab der nächsten Anmeldung.
+
+Das Modul entscheidet nichts selbst: Es wirkt nur, wenn in ASE Pro die 2FA aktiv ist, E-Mail als Methode erlaubt ist, die Option «Enable the email method by default» eingeschaltet ist und die Rolle des Kontos zur Pflicht gehört. Wer schon eine Methode nutzt, bleibt unverändert. Es wird nur ein Faktor eingeschaltet, nie einer entfernt. Anmeldungen über REST, XML-RPC und Application Passwords lösen das Einschalten nicht aus. Ist der Code für ein Konto eingeschaltet, lehnt ASE Pro in seiner Standardeinstellung Anmeldungen mit Benutzername und Passwort über REST und XML-RPC für dieses Konto ab.
+
+Vor dem Update auf 1.0.7 und vor dem Einschalten der 2FA beachten:
+
+- Sind die Bedingungen oben auf einer Website schon erfüllt, stellt das Modul alle Konten der Pflichtrollen um, sobald sie sich das nächste Mal anmelden oder eine Seite im Backend aufrufen. Das gilt auch für Administrator-Konten. Die Frist von ASE Pro bis zur Einrichtung entfällt für diese Konten.
+- Automatisch umgestellte Konten haben keine Backup-Codes. Der Code per E-Mail ist ihr einziger Weg. Kommt er nicht an, kann sich das Konto nicht anmelden.
+- Deshalb vorher den Mailversand der Website an ein echtes Postfach prüfen.
+
+Notausgang per WP-CLI, schaltet die 2FA von ASE Pro für die ganze Website aus: `wp option patch update admin_site_enhancements two_factor_authentication false --format=json`. Ein einzelnes Konto lässt sich bei aktivem Modul nicht über die Benutzer-Meta befreien, die nächste Anmeldung schaltet den Code wieder ein. Dauerhaft hilft nur, die Rolle in ASE Pro aus der Pflicht zu nehmen. Modul abschalten und Meta löschen hilft nur, bis das Profil des Kontos im Backend geöffnet wird: Dann schaltet ASE Pro den Code selbst wieder ein.
+
+Die 2FA muss von ASE Pro kommen. Der Betrieb neben dem eigenständigen Plugin «Two Factor» ist nicht geprüft.
 
 ## Sprache
 
@@ -59,7 +81,8 @@ Im Upload-Feld der Mediathek steht anstelle der technischen Obergrenze des Serve
 | `wp option update bw_protect_lang_switcher off` | Sprachwahl aus (`auto` = nur bei mehreren Sprachen, `on` = immer, auch auf einsprachigen Websites) |
 | `wp option update bw_protect_upload_max_image 5` | Limit für Bilder in MB (Standard 2, `0` = kein Limit) |
 | `wp option update bw_protect_upload_max_file 50` | Limit für alle anderen Dateien in MB (Standard 10, `0` = kein Limit) |
-| `wp option update bw_protect_disabled_modules '["uploads"]' --format=json` | Einzelne Module auf dieser Site abschalten (`login`, `path`, `mail`, `uploads`, `rest`) |
+| `wp option update bw_protect_disabled_modules twofa` | Ein Modul auf dieser Site abschalten (`login`, `path`, `mail`, `uploads`, `rest`, `twofa`). Ersetzt eine vorhandene Liste. Alle wieder einschalten: `wp option delete bw_protect_disabled_modules` |
+| `wp option update bw_protect_disabled_modules '["uploads","twofa"]' --format=json` | Mehrere Module abschalten. Wegen der Zeichen `[ " ,` nicht über WP-CLI bei Kinsta, dort per SSH |
 | `wp plugin deactivate beyondweb-protect` | Alles aus, Login sieht wieder aus wie WordPress-Standard |
 
 Die Funktionen des Plugins lassen sich aus anderem Code nicht einzeln per `remove_filter` oder `remove_action` aushängen. Abschalten geht nur modulweise über `bw_protect_disabled_modules`.
@@ -67,6 +90,6 @@ Die Funktionen des Plugins lassen sich aus anderem Code nicht einzeln per `remov
 ## Neue Version veröffentlichen
 
 1. Version an zwei Stellen in `beyondweb-protect/beyondweb-protect.php` erhöhen, `CHANGELOG.md` ergänzen.
-2. Auf GitHub: Actions, links «Release» wählen, «Run workflow», Version eingeben (z. B. `1.0.6`).
+2. Auf GitHub: Actions, links «Release» wählen, «Run workflow», Version eingeben (z. B. `1.0.7`).
 3. Die Action prüft Version und PHP-Syntax, baut die ZIP und legt das Release `v<version>` mit SHA-256-Prüfsumme an.
 4. Zuerst auf einer Site installieren und die Anmeldung testen, danach gestaffelt ausrollen.

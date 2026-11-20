@@ -623,6 +623,40 @@ function bw_protect_login_language_nav() {
 }
 
 /* -------------------------------------------------------------------------
+ * Anmeldefenster bei abgelaufener Sitzung: Code-Schritt der 2FA
+ * ---------------------------------------------------------------------- */
+
+// Nach einem falschen Code oder «Code erneut senden» gibt die 2FA die Code-Seite aus, bevor
+// WordPress den Fenster-Modus setzt (wp-login.php setzt $interim_login erst nach der Aktion
+// login_form_...). Ohne diesen Schritt fehlt der Seite die Klasse «interim-login» und im
+// Fenster erscheint die ganze Login-Seite. Gesetzt wird derselbe Wert, den WordPress
+// danach selbst setzen wuerde.
+// Registriert wird erst auf login_init und nur, wenn die 2FA die Aktion selbst kennt:
+// WordPress prueft vorher mit has_filter(), ob eine Aktion gueltig ist, und diese Pruefung
+// soll durch das Plugin nicht anders ausfallen.
+add_action(
+	'login_init',
+	bw_protect_guard(
+		function () {
+			if ( false === has_action( 'login_form_validate_2fa' ) ) {
+				return;
+			}
+			add_action(
+				'login_form_validate_2fa',
+				bw_protect_guard(
+					function () {
+						if ( isset( $_REQUEST['interim-login'] ) && empty( $GLOBALS['interim_login'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+							$GLOBALS['interim_login'] = true; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+						}
+					}
+				),
+				0
+			);
+		}
+	)
+);
+
+/* -------------------------------------------------------------------------
  * Eigene Texte auf der Login-Seite (nur wp-login.php)
  * ---------------------------------------------------------------------- */
 
